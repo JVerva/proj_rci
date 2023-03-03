@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 int initTcpSocket(char [], char[]);
+int initUdpSocket(char [], char[]);
 
 int main(int argc, char* argv[]){
 
@@ -23,7 +24,10 @@ int main(int argc, char* argv[]){
     char *regPort = argv[4];
 
     //init tcp socket
-    int fd = initTcpSocket(ip, port);
+    int tcpFd = initTcpSocket(ip, port);
+    //init udp sockt to comunicate with network server
+    int udpFD = initUdpSocket(ip, port);
+
 
     //file descriptor set
     fd_set rfds;
@@ -39,9 +43,9 @@ int main(int argc, char* argv[]){
         //add keyboard to file descriptor set
         FD_SET(0, &rfds);
         //add tcp socket to file descriptor set
-        FD_SET(fd, &rfds);
+        FD_SET(tcpFd, &rfds);
 
-        counter = select(fd+1, &rfds, NULL, NULL, NULL);
+        counter = select(tcpFd+1, &rfds, NULL, NULL, NULL);
 
         if(counter<=0){
             fprintf(stderr, "select error: %d.\n", counter);
@@ -57,8 +61,8 @@ int main(int argc, char* argv[]){
                 printf("keyboard: %s\n",buffer);
             }
             //tcp socket ready
-            if(FD_ISSET(fd, &rfds)){
-                FD_CLR(fd,&rfds);
+            if(FD_ISSET(tcpFd, &rfds)){
+                FD_CLR(tcpFd,&rfds);
                 n = read(0,buffer,128);
                 printf("socket: %s\n", buffer);
             }
@@ -92,6 +96,29 @@ int initTcpSocket(char ip[], char port[]){
 
     //listen for incoming connections
     listen(sockfd, 5);
+
+    return sockfd;
+}
+
+//create a udp socket
+int initUdpSocket(char ip[], char port[]){
+    int status;
+    struct addrinfo hints, *res;
+    int sockfd;
+
+    //fill hints
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    //get address info
+    if(status = getaddrinfo(ip, port, &hints, &res) != 0){
+        fprintf(stderr, "getaddrinfo error: %d\n", status);
+        exit(1);
+    }
+
+    //create socket
+    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
     return sockfd;
 }
