@@ -8,28 +8,37 @@
 #include <unistd.h>
 
 int inittcpsocket(char[], char[]);
-int initudpsocket(char[], char[]);
+int initudpsocket(char[], char[], struct addrinfo*);
 int commandcheck(char[], char*[]);
+int join(int udp, char[] , char[], struct addrinfo);
 
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
+char DEFAULT_IP[] = {"193.136.138.142"};
+char DEFAULT_PORT[] = {"59000"};
 
 int main(int argc, char* argv[]){
 
     //get arguments
-    if(argc != 5){
+    if(argc != 5 && argc != 3){
         fprintf(stderr, "wrong number of arguments: %d.\n", argc);
         exit(1);
+    }if (argc == 5){
+        char *regIp = argv[3];
+        char *regPort = argv[4];
+    }else if(argc == 3){
+        char *regIp = DEFAULT_IP;
+        char *regPort = DEFAULT_PORT;
     }
 
     char *ip = argv[1];
     char *port = argv[2];
-    char *regIp = argv[3];
-    char *regPort = argv[4];
+
+    struct addrinfo node_server;
 
     //init tcp socket
     int fd_tcp = inittcpsocket(ip, port);
     //init udp sockt to comunicate with network server
-    int fd_udp = initudpsocket(ip, port);
+    int fd_udp = initudpsocket(ip, port, &node_server);
 
 
     //file descriptor set
@@ -62,7 +71,15 @@ int main(int argc, char* argv[]){
                 FD_CLR(0,&rfds);
                 n = read(0,buffer,128);
                 char** args;
-                commandcheck(buffer, args);
+                int cmd = commandcheck(buffer, args);
+                switch(cmd){
+                    case 0:
+                        join(fd_udp, args[0], args[1], node_server);
+                        break;
+                    default:
+                        fprintf(stderr, "command not yet implemented.\n");
+                        break;
+                }
             }
             //tcp socket ready
             if(FD_ISSET(fd_tcp, &rfds)){
@@ -106,9 +123,9 @@ int inittcpsocket(char ip[], char port[]){
 }
 
 //create a udp socket
-int initudpsocket(char ip[], char port[]){
+int initudpsocket(char ip[], char port[], struct addrinfo *res){
     int status;
-    struct addrinfo hints, *res;
+    struct addrinfo hints;
     int sockfd;
 
     //fill hints
@@ -219,5 +236,11 @@ int commandcheck(char buffer[], char* args[]){
         return -1;
     }
     return index;
+}
+
+
+int join(int udp,char net[], char id[], struct addrinfo serverinfo){
+    
+    int n = sendto(udp, strcat("NODES ", net),10,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
 }
 
