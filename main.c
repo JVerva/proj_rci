@@ -11,7 +11,8 @@
 int inittcpsocket(char[], char[]);
 int initudpsocket(char[], char[], struct addrinfo*);
 int commandcheck(char[], char*[]);
-int join(int udp, char[] , char[], struct addrinfo);
+int join(int, char[] , char[], struct addrinfo);
+int checkfornode(char[], char[]);
 
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
 char DEFAULT_IP[] = {"193.136.138.142"};
@@ -76,16 +77,22 @@ int main(int argc, char* argv[]){
             if(FD_ISSET(0, &rfds)){
                 FD_CLR(0,&rfds);
                 n = read(0,buffer,128);
-                char** args;
+                char **args = (char**)malloc(5*sizeof(char**));
                 int cmd = commandcheck(buffer, args);
                 switch(cmd){
+                    case -1:
+                        break;
                     case 0:
                         join(fd_udp, args[0], args[1], node_server);
                         break;
+                    case 10:
+                        //exit
+                        return 0;
                     default:
                         fprintf(stderr, "command not yet implemented.\n");
                         break;
                 }
+                free(args);
             }
             //tcp socket ready
             if(FD_ISSET(fd_tcp, &rfds)){
@@ -153,8 +160,7 @@ int initudpsocket(char ip[], char port[], struct addrinfo *res){
 
 //checks if commands are valid, returns comand index if they are, returns -1 and prints error msg if they aren't
 //args gets filled with arguments for command
-int commandcheck(char buffer[], char* args[]){
-    args = (char**)malloc(5*sizeof(char**));
+int commandcheck(char buffer[], char** args){
     int index = 0;
     int n = -1;
     char cmd[10];
@@ -244,9 +250,75 @@ int commandcheck(char buffer[], char* args[]){
     return index;
 }
 
+//joins node to network. if node id is already in the networks, use a new free one.
+int join(int udp, char net[], char id[], struct addrinfo serverinfo){
+    //verify arguments
+    if(strlen(net) != 3){
+        fprintf(stderr, "net id has wrong size.\n");
+        return -1;
+    }else{
+        for(int i = 0; i < 3; i++){
+            if(!(net[i]<57 && net[i]>47)){
+                fprintf(stderr, "net id is invaid.\n");
+                return -1;
+            }
+        }
+    }
+    if(strlen(id) != 2){
+        fprintf(stderr, "node id has wrong size.\n");
+        return -1;
+    }else{
+        for(int i = 0; i < 2; i++){
+            if(!(id[i]<57 && id[i]>47)){
+                fprintf(stderr, "node id is invaid.\n");
+                return -1;
+            }
+        }
+    }
 
-int join(int udp,char net[], char id[], struct addrinfo serverinfo){
-    
-    int n = sendto(udp, strcat("NODES ", net),10,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    //ask for network info
+    char buff[256];
+    char cmd[10] = {"NODES \0"};
+    int n = sendto(udp, strcat(cmd, net),9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "sendto error.\n");
+        return -1;
+    }
+    n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "recvfrom error.\n");
+        return -1;
+    }
+    //check if id already exists in the network
+    int changed = 1;
+    char* og_id = id;
+    while(checkfornode(id, buff)!=0){
+        int iid = atoi(id);
+        iid++;
+        sprintf(id, "%d", iid);
+        if(iid<10){
+            id = strcat("0",id);
+        }
+        changed = 0;
+    }
+    if(changed == 0){
+        printf("%s was already in the network, used id: %s instead.", og_id, id);
+    }
+}
+
+//check is node already exists in network, node list is the list of nodes returned by network
+int checkfornode(char node_id[], char node_list[]){
+    //divide buffer into tokens
+    //extract the first token
+    char* token = strtok(node_list, " \n");
+    //loop through the string to extract all other tokens
+    for(int i=0; token != NULL; i++ ) {
+        token = strtok(NULL, " \n");
+        if(strcmp(node_id,token)==0){
+            //node already exists
+            return 1;
+        }
+    }
+    return 0;
 }
 
