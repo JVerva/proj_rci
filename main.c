@@ -47,7 +47,8 @@ int main(int argc, char* argv[]){
     int fd_tcp = inittcpsocket(ip, port);
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(ip, port, &node_server);
-
+    int id = -1;
+    char net[4] = NULL;
 
     //file descriptor set
     fd_set rfds;
@@ -84,7 +85,15 @@ int main(int argc, char* argv[]){
                     case -1:
                         break;
                     case 0:
-                        join(fd_udp, args[0], args[1], node_server);
+                        if(id != -1){
+                            fprintf(stderr, "Node already registered in net %s as node %d.2\n", net, id);
+                        }else{
+                            id = join(fd_udp, args[0], args[1], node_server);
+                            strcpy(args[0], net);
+                        }
+                        break;
+                    case 9:
+                        leave(fd_udp, net, id, node_server);
                         break;
                     case 10:
                         //exit
@@ -323,3 +332,28 @@ int checkfornode(char node_id[], char node_list[]){
     return 0;
 }
 
+int leave(int udp, char net[], int id, struct addrinfo serverinfo[]){
+    //send leave command
+    char buff[256];
+    char cmd[13];
+    char ok_unreg[] = "OKUNREG";
+    sprintf(cmd, "UNREG %c %d.2\0", net, id);
+
+    int n = sendto(udp, cmd,12,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "sendto error.\n");
+        return -1;
+    }
+
+    //receive server response
+    n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "recvfrom error.\n");
+        return -1;
+    }
+    if (strcmp(ok_unreg, buff)!=0){
+        fprintf(stderr, "leave command not successful\n");
+        return id;
+    }
+    return -1;
+}
