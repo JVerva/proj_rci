@@ -13,6 +13,7 @@ int initudpsocket(char[], char[], struct addrinfo*);
 int commandcheck(char[], char*[]);
 int join(int, char[] , char[], struct addrinfo);
 int checkfornode(char[], char[]);
+int leave(int, char[], int, struct addrinfo);
 
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
 char DEFAULT_IP[] = {"193.136.138.142"};
