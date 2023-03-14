@@ -13,7 +13,7 @@
         "request": "launch",
         "program": "/home/verva/proj_rci/cot",
         "externalConsole": false,
-        "args": ["0.0.0.0", "59000"],
+        "args": ["0.0.0.0", "59001"],
         "cwd": "/home/verva/proj_rci",
         "stopAtEntry": false,
         "launchCompleteCommand": "exec-run",

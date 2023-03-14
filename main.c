@@ -18,17 +18,18 @@ char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
 
 int main(int argc, char* argv[]){
-
+    char *reg_ip;
+    char *reg_port;
     //get arguments
     if(argc != 5 && argc != 3){
         fprintf(stderr, "wrong number of arguments: %d.\n", argc);
         exit(1);
     }if (argc == 5){
-        char *regIp = argv[3];
-        char *regPort = argv[4];
+        reg_ip = argv[3];
+        reg_port = argv[4];
     }else if(argc == 3){
-        char *regIp = DEFAULT_IP;
-        char *regPort = DEFAULT_PORT;
+        reg_ip = DEFAULT_IP;
+        reg_port = DEFAULT_PORT;
     }
 
     char *ip = argv[1];
@@ -39,7 +40,7 @@ int main(int argc, char* argv[]){
     //init tcp socket
     int fd_tcp = inittcpsocket(ip, port);
     //init udp sockt to comunicate with network server
-    int fd_udp = initudpsocket(ip, port, &node_server);
+    int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
 
     //file descriptor set
@@ -94,7 +95,7 @@ int main(int argc, char* argv[]){
                 n = read(0,buffer,128);
                 printf("socket: %s\n", buffer);
             }
-            strcpy(buffer,"\0");
+            memset(buffer,0,sizeof(buffer));
         }
     }
     return 0;
@@ -273,7 +274,8 @@ int join(int udp, char net[], char id[], struct addrinfo serverinfo){
     //ask for network info
     char buff[256];
     char cmd[10] = {"NODES \0"};
-    int n = sendto(udp, strcat(cmd, net),9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    strcat(cmd, net);
+    int n = sendto(udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
         fprintf(stderr, "sendto error.\n");
         return -1;
