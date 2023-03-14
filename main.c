@@ -6,9 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <arpa/inet.h>
 
 int inittcpsocket(char[], char[]);
-int initudpsocket(char[], char[], struct addrinfo*);
+int initudpsocket(char[], char[], struct addrinfo**);
 int commandcheck(char[], char*[]);
 int join(int, char[] , char[], struct addrinfo);
 int checkfornode(char[], char[]);
@@ -18,8 +20,8 @@ char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
 
 int main(int argc, char* argv[]){
-    char *reg_ip;
-    char *reg_port;
+    char *reg_ip = (char*)malloc(sizeof(char*));
+    char *reg_port = (char*)malloc(sizeof(char*));
     //get arguments
     if(argc != 5 && argc != 3){
         fprintf(stderr, "wrong number of arguments: %d.\n", argc);
@@ -28,14 +30,14 @@ int main(int argc, char* argv[]){
         reg_ip = argv[3];
         reg_port = argv[4];
     }else if(argc == 3){
-        reg_ip = DEFAULT_IP;
-        reg_port = DEFAULT_PORT;
+        strcpy(reg_ip, DEFAULT_IP);
+        strcpy(reg_port, DEFAULT_PORT);
     }
 
     char *ip = argv[1];
     char *port = argv[2];
 
-    struct addrinfo node_server;
+    struct addrinfo* node_server = (struct addrinfo*)malloc(sizeof(struct addrinfo*));
 
     //init tcp socket
     int fd_tcp = inittcpsocket(ip, port);
@@ -76,9 +78,11 @@ int main(int argc, char* argv[]){
                 int cmd = commandcheck(buffer, args);
                 switch(cmd){
                     case -1:
+                        //error on commands (skip)
                         break;
                     case 0:
-                        join(fd_udp, args[0], args[1], node_server);
+                        //join
+                        join(fd_udp, args[0], args[1], *node_server);
                         break;
                     case 10:
                         //exit
@@ -131,7 +135,7 @@ int inittcpsocket(char ip[], char port[]){
 }
 
 //create a udp socket
-int initudpsocket(char ip[], char port[], struct addrinfo *res){
+int initudpsocket(char ip[], char port[], struct addrinfo **res){
     int status;
     struct addrinfo hints;
     int sockfd;
@@ -142,13 +146,13 @@ int initudpsocket(char ip[], char port[], struct addrinfo *res){
     hints.ai_socktype = SOCK_DGRAM;
 
     //get address info
-    if(status = getaddrinfo(ip, port, &hints, &res) != 0){
+    if(status = getaddrinfo(ip, port, &hints, res) != 0){
         fprintf(stderr, "getaddrinfo error: %d\n", status);
         exit(1);
     }
 
     //create socket
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    sockfd = socket((*res)->ai_family, (*res)->ai_socktype, (*res)->ai_protocol);
 
     return sockfd;
 }
@@ -277,12 +281,12 @@ int join(int udp, char net[], char id[], struct addrinfo serverinfo){
     strcat(cmd, net);
     int n = sendto(udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
-        fprintf(stderr, "sendto error.\n");
+        perror("sendto error");
         return -1;
     }
     n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
     if(n == -1){
-        fprintf(stderr, "recvfrom error.\n");
+        perror("rcvfrom error");
         return -1;
     }
     //check if id already exists in the network
@@ -300,6 +304,7 @@ int join(int udp, char net[], char id[], struct addrinfo serverinfo){
     if(changed == 0){
         printf("%s was already in the network, used id: %s instead.", og_id, id);
     }
+    //create node in the network
 }
 
 //check is node already exists in network, node list is the list of nodes returned by network
@@ -310,9 +315,11 @@ int checkfornode(char node_id[], char node_list[]){
     //loop through the string to extract all other tokens
     for(int i=0; token != NULL; i++ ) {
         token = strtok(NULL, " \n");
-        if(strcmp(node_id,token)==0){
-            //node already exists
-            return 1;
+        if(token!=NULL){
+            if(strcmp(node_id,token)==0){
+                //node already exists
+                return 1;
+            }
         }
     }
     return 0;
