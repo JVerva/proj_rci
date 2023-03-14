@@ -291,35 +291,29 @@ int join(int udp, char net[], char id[], char ip[], char tcp[], struct addrinfo 
     }
     //check if id already exists in the network
     int changed = 1;
-    char* og_id = id;
-    while(checkfornode(id, buff)!=0){
+    char* og_id = strdup(id);
+    char* tmpbuff = strdup(buff);
+    //if it does get the next free id, and add it with that 
+    while(checkfornode(id, tmpbuff)!=0){
         int iid = atoi(id);
         iid++;
-        sprintf(id, "%d", iid);
-        if(iid<10){
-            id = strcat("0",id);
-        }
+        sprintf(id, "%.2d", iid);
         changed = 0;
+        tmpbuff = strdup(buff);
     }
     if(changed == 0){
-        printf("%s was already in the network, used id: %s instead.", og_id, id);
+        printf("%s was already in the network, used id %s instead.\n", og_id, id);
     }
     //create node in the network
     memset(cmd, 0, sizeof(cmd));
     memset(buff, 0, sizeof(buff));
-    strcpy(cmd, "REG ");
-    strcat(cmd, net);
-    strcat(cmd, " ");
-    strcat(cmd, id);
-    strcat(cmd, " ");
-    strcat(cmd, ip);
-    strcat(cmd, " ");
-    strcat(cmd, tcp);
+    sprintf(cmd, "REG %s %s %s %s", net, id, ip, tcp);
     n = sendto(udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
         perror("sendto error");
         return -1;
     }
+    //confirm node insertion
     n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
     if(n == -1){
         perror("rcvfrom error");
@@ -330,7 +324,7 @@ int join(int udp, char net[], char id[], char ip[], char tcp[], struct addrinfo 
     }
 }
 
-//check is node already exists in network, node list is the list of nodes returned by network
+//check if node already exists in network, node list is the list of nodes returned by network, returns 1 if it already exists
 int checkfornode(char node_id[], char node_list[]){
     //divide buffer into tokens
     //extract the first token
