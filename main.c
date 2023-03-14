@@ -12,7 +12,7 @@
 int inittcpsocket(char[], char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
 int commandcheck(char[], char*[]);
-int join(int, char[] , char[], struct addrinfo);
+int join(int, char[] , char[], char[], char[], struct addrinfo);
 int checkfornode(char[], char[]);
 
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]){
                         break;
                     case 0:
                         //join
-                        join(fd_udp, args[0], args[1], *node_server);
+                        join(fd_udp, args[0], args[1], ip, port, *node_server);
                         break;
                     case 10:
                         //exit
@@ -250,7 +250,7 @@ int commandcheck(char buffer[], char** args){
 }
 
 //joins node to network. if node id is already in the networks, use a new free one.
-int join(int udp, char net[], char id[], struct addrinfo serverinfo){
+int join(int udp, char net[], char id[], char ip[], char tcp[], struct addrinfo serverinfo){
     //verify arguments
     if(strlen(net) != 3){
         fprintf(stderr, "net id has wrong size.\n");
@@ -277,7 +277,7 @@ int join(int udp, char net[], char id[], struct addrinfo serverinfo){
 
     //ask for network info
     char buff[256];
-    char cmd[10] = {"NODES \0"};
+    char cmd[40] = {"NODES \0"};
     strcat(cmd, net);
     int n = sendto(udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
@@ -305,6 +305,29 @@ int join(int udp, char net[], char id[], struct addrinfo serverinfo){
         printf("%s was already in the network, used id: %s instead.", og_id, id);
     }
     //create node in the network
+    memset(cmd, 0, sizeof(cmd));
+    memset(buff, 0, sizeof(buff));
+    strcpy(cmd, "REG ");
+    strcat(cmd, net);
+    strcat(cmd, " ");
+    strcat(cmd, id);
+    strcat(cmd, " ");
+    strcat(cmd, ip);
+    strcat(cmd, " ");
+    strcat(cmd, tcp);
+    n = sendto(udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        perror("sendto error");
+        return -1;
+    }
+    n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        perror("rcvfrom error");
+        return -1;
+    }
+    if(strcmp(buff, "OKREG")==0){
+        printf("node inserted.\n");
+    }
 }
 
 //check is node already exists in network, node list is the list of nodes returned by network
