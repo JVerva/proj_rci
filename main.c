@@ -18,6 +18,7 @@ const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topol
 char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
 
+
 int main(int argc, char* argv[]){
 
     //get arguments
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]){
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(ip, port, &node_server);
     int id = -1;
-    char net[4] = NULL;
+    char net[4];
 
     //file descriptor set
     fd_set rfds;
@@ -326,12 +327,12 @@ int checkfornode(char node_id[], char node_list[]){
     return 0;
 }
 
-int leave(int udp, char net[], int id, struct addrinfo serverinfo[]){
+int leave(int udp, char net[], int id, struct addrinfo serverinfo){
     //send leave command
     char buff[256];
     char cmd[13];
     char ok_unreg[] = "OKUNREG";
-    sprintf(cmd, "UNREG %c %d.2\0", net, id);
+    sprintf(cmd, "UNREG %s %d.2", net, id);
 
     int n = sendto(udp, cmd,12,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
