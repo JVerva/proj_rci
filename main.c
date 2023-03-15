@@ -6,9 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-//a
 
-<<<<<<< HEAD
 int inittcpsocket(char[], char[]);
 int initudpsocket(char[], char[], struct addrinfo*);
 int commandcheck(char[], char*[]);
@@ -19,11 +17,6 @@ int leave(int, char[], int, struct addrinfo);
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
 char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
-=======
-int initTcpSocket(char [], char[]);
-int initUdpSocket(char [], char[]);
-//a
->>>>>>> teste
 
 int main(int argc, char* argv[]){
 
