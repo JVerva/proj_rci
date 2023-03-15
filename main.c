@@ -394,7 +394,6 @@ int djoin(int udp, char net[], char id[], char bootid[], char ip[], char tcp[], 
     }
 }
 
-
 //check if node already exists in network, node list is the list of nodes returned by network, returns 1 if it already exists
 int checkfornode(char node_id[], char node_list[]){
     //divide buffer into tokens

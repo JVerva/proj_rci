@@ -13,8 +13,13 @@
         "request": "launch",
         "program": "/home/joaogois/Documents/RCI/proj_rci/cot",
         "externalConsole": false,
+<<<<<<< HEAD
         "args": ["0.0.0.0", "59000"],
         "cwd": "/home/joaogois/Documents/RCI/proj_rci",
+=======
+        "args": ["85.242.167.240", "59001"],
+        "cwd": "/home/verva/proj_rci",
+>>>>>>> 7ebdc40ce32276454e9593325102cb03c76e9aca
         "stopAtEntry": false,
         "launchCompleteCommand": "exec-run",
         "MIMode": "gdb",
