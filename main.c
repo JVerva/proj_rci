@@ -15,12 +15,15 @@ int commandcheck(char[], char*[]);
 int join(int, char[] , char[], char[], char[], struct addrinfo);
 int djoin(int, char[] , char[], char[], char[],char[], struct addrinfo);
 int checkfornode(char[], char[]);
+int leave(int, char[], int, struct addrinfo);
 
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
 char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
 
 int main(int argc, char* argv[]){
+    char *net;
+    char *id = {"-1"};
     char *reg_ip = (char*)malloc(sizeof(char*));
     char *reg_port = (char*)malloc(sizeof(char*));
     //get arguments
@@ -44,7 +47,6 @@ int main(int argc, char* argv[]){
     int fd_tcp = inittcpsocket(ip, port);
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
-
 
     //file descriptor set
     fd_set rfds;
@@ -83,11 +85,23 @@ int main(int argc, char* argv[]){
                         break;
                     case 0:
                         //join
-                        join(fd_udp, args[0], args[1], ip, port, *node_server);
+                        id = strdup(args[1]);
+                        net = strdup(args[0]);
+                        join(fd_udp, net, id, ip, port, *node_server);
+                        //impedir um segundo join |||||||||||||||||||||||||||
                         break;
                     case 1:
                         //djoin
                         djoin(fd_udp, args[0], args[1], args[2], args[3], args[4], *node_server);
+                        break;
+                    case 9:
+                        //leave
+                        if(strcmp(id, "-1")==0){
+                            fprintf(stderr,"node not registered.\n");
+                        }else{
+                            leave(fd_udp, net, atoi(id), *node_server);
+                            strcpy(id, "-1");
+                        }
                         break;
                     case 10:
                         //exit
@@ -380,7 +394,6 @@ int djoin(int udp, char net[], char id[], char bootid[], char ip[], char tcp[], 
     }
 }
 
-
 //check if node already exists in network, node list is the list of nodes returned by network, returns 1 if it already exists
 int checkfornode(char node_id[], char node_list[]){
     //divide buffer into tokens
@@ -399,3 +412,31 @@ int checkfornode(char node_id[], char node_list[]){
     return 0;
 }
 
+//unregisters node from network
+int leave(int udp, char net[], int id, struct addrinfo serverinfo){
+    //send leave command
+    char buff[256];
+    char cmd[13];
+    char ok_unreg[] = "OKUNREG";
+    sprintf(cmd, "UNREG %s %.2d", net, id);
+    printf("%s\n",cmd);
+
+    int n = sendto(udp, cmd, 12, 0, serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "sendto error.\n");
+        return -1;
+    }
+
+    //receive server response
+    n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "recvfrom error.\n");
+        return -1;
+    }
+    if (strcmp(ok_unreg, buff)!=0){
+        fprintf(stderr, "leave command not successful\n");
+        return -1;
+    }
+    printf("node left.\n");
+    return 0;
+}
