@@ -7,7 +7,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "/home/verva/proj_rci/main.c",
+                "/home/joaogois/Documents/RCI/proj_rci/main.c",
                 "-o",
                 "cot"
             ],

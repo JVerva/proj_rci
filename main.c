@@ -48,7 +48,6 @@ int main(int argc, char* argv[]){
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
-
     //file descriptor set
     fd_set rfds;
     //number of ready file descriptors
@@ -416,7 +415,6 @@ int checkfornode(char node_id[], char node_list[]){
 
 //unregisters node from network
 int leave(int udp, char net[], int id, struct addrinfo serverinfo){
-
     //send leave command
     char buff[256];
     char cmd[13];
@@ -424,7 +422,7 @@ int leave(int udp, char net[], int id, struct addrinfo serverinfo){
     sprintf(cmd, "UNREG %s %.2d", net, id);
     printf("%s\n",cmd);
 
-    int n = sendto(udp, cmd,12,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    int n = sendto(udp, cmd, 12, 0, serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
         fprintf(stderr, "sendto error.\n");
         return -1;
