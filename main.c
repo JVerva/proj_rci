@@ -6,39 +6,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <arpa/inet.h>
 
 int inittcpsocket(char[], char[]);
-int initudpsocket(char[], char[], struct addrinfo*);
+int initudpsocket(char[], char[], struct addrinfo**);
 int commandcheck(char[], char*[]);
-int join(int udp, char[] , char[], struct addrinfo);
+int join(int, char[] , char[], char[], char[], struct addrinfo);
+int djoin(int, char[] , char[], char[], char[],char[], struct addrinfo);
+int checkfornode(char[], char[]);
 
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
 char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
 
 int main(int argc, char* argv[]){
-
+    char *reg_ip = (char*)malloc(sizeof(char*));
+    char *reg_port = (char*)malloc(sizeof(char*));
     //get arguments
     if(argc != 5 && argc != 3){
         fprintf(stderr, "wrong number of arguments: %d.\n", argc);
         exit(1);
     }if (argc == 5){
-        char *regIp = argv[3];
-        char *regPort = argv[4];
+        reg_ip = argv[3];
+        reg_port = argv[4];
     }else if(argc == 3){
-        char *regIp = DEFAULT_IP;
-        char *regPort = DEFAULT_PORT;
+        strcpy(reg_ip, DEFAULT_IP);
+        strcpy(reg_port, DEFAULT_PORT);
     }
 
     char *ip = argv[1];
     char *port = argv[2];
 
-    struct addrinfo node_server;
+    struct addrinfo* node_server = (struct addrinfo*)malloc(sizeof(struct addrinfo*));
 
     //init tcp socket
     int fd_tcp = inittcpsocket(ip, port);
     //init udp sockt to comunicate with network server
-    int fd_udp = initudpsocket(ip, port, &node_server);
+    int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
 
     //file descriptor set
@@ -70,16 +75,28 @@ int main(int argc, char* argv[]){
             if(FD_ISSET(0, &rfds)){
                 FD_CLR(0,&rfds);
                 n = read(0,buffer,128);
-                char** args;
+                char **args = (char**)malloc(6*sizeof(char**));
                 int cmd = commandcheck(buffer, args);
                 switch(cmd){
-                    case 0:
-                        join(fd_udp, args[0], args[1], node_server);
+                    case -1:
+                        //error on commands (skip)
                         break;
+                    case 0:
+                        //join
+                        join(fd_udp, args[0], args[1], ip, port, *node_server);
+                        break;
+                    case 1:
+                        //djoin
+                        djoin(fd_udp, args[0], args[1], args[2], args[3], args[4], *node_server);
+                        break;
+                    case 10:
+                        //exit
+                        return 0;
                     default:
                         fprintf(stderr, "command not yet implemented.\n");
                         break;
                 }
+                free(args);
             }
             //tcp socket ready
             if(FD_ISSET(fd_tcp, &rfds)){
@@ -87,8 +104,9 @@ int main(int argc, char* argv[]){
                 n = read(0,buffer,128);
                 printf("socket: %s\n", buffer);
             }
-            strcpy(buffer,"\0");
+            memset(buffer,0,sizeof(buffer));
         }
+
     }
     return 0;
 }
@@ -123,7 +141,7 @@ int inittcpsocket(char ip[], char port[]){
 }
 
 //create a udp socket
-int initudpsocket(char ip[], char port[], struct addrinfo *res){
+int initudpsocket(char ip[], char port[], struct addrinfo **res){
     int status;
     struct addrinfo hints;
     int sockfd;
@@ -134,21 +152,20 @@ int initudpsocket(char ip[], char port[], struct addrinfo *res){
     hints.ai_socktype = SOCK_DGRAM;
 
     //get address info
-    if(status = getaddrinfo(ip, port, &hints, &res) != 0){
+    if(status = getaddrinfo(ip, port, &hints, res) != 0){
         fprintf(stderr, "getaddrinfo error: %d\n", status);
         exit(1);
     }
 
     //create socket
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    sockfd = socket((*res)->ai_family, (*res)->ai_socktype, (*res)->ai_protocol);
 
     return sockfd;
 }
 
 //checks if commands are valid, returns comand index if they are, returns -1 and prints error msg if they aren't
 //args gets filled with arguments for command
-int commandcheck(char buffer[], char* args[]){
-    args = (char**)malloc(5*sizeof(char**));
+int commandcheck(char buffer[], char** args){
     int index = 0;
     int n = -1;
     char cmd[10];
@@ -238,9 +255,147 @@ int commandcheck(char buffer[], char* args[]){
     return index;
 }
 
+//joins node to network. if node id is already in the networks, use a new free one.
+int join(int udp, char net[], char id[], char ip[], char tcp[], struct addrinfo serverinfo){
+    //verify arguments
+    if(strlen(net) != 3){
+        fprintf(stderr, "net id has wrong size.\n");
+        return -1;
+    }else{
+        for(int i = 0; i < 3; i++){
+            if(!(net[i]<57 && net[i]>47)){
+                fprintf(stderr, "net id is invaid.\n");
+                return -1;
+            }
+        }
+    }
+    if(strlen(id) != 2){
+        fprintf(stderr, "node id has wrong size.\n");
+        return -1;
+    }else{
+        for(int i = 0; i < 2; i++){
+            if(!(id[i]<57 && id[i]>47)){
+                fprintf(stderr, "node id is invaid.\n");
+                return -1;
+            }
+        }
+    }
 
-int join(int udp,char net[], char id[], struct addrinfo serverinfo){
-    
-    int n = sendto(udp, strcat("NODES ", net),10,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    //ask for network info
+    char buff[256];
+    char cmd[40] = {"NODES \0"};
+    strcat(cmd, net);
+    int n = sendto(udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        perror("sendto error");
+        return -1;
+    }
+    n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        perror("rcvfrom error");
+        return -1;
+    }
+    //check if id already exists in the network
+    int changed = 1;
+    char* og_id = strdup(id);
+    char* tmpbuff = strdup(buff);
+    //if it does get the next free id, and add it with that 
+    while(checkfornode(id, tmpbuff)!=0){
+        int iid = atoi(id);
+        iid++;
+        sprintf(id, "%.2d", iid);
+        tmpbuff = strdup(buff);
+        changed = 0;
+    }
+    if(changed == 0){
+        printf("%s was already in the network, used id %s instead.\n", og_id, id);
+    }
+    //create node in the network
+    memset(cmd, 0, sizeof(cmd));
+    memset(buff, 0, sizeof(buff));
+    sprintf(cmd, "REG %s %s %s %s", net, id, ip, tcp);
+    n = sendto(udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        perror("sendto error");
+        return -1;
+    }
+    //confirm node insertion
+    n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        perror("rcvfrom error");
+        return -1;
+    }
+    if(strcmp(buff, "OKREG")==0){
+        printf("node inserted.\n");
+    }
+}
+
+//joins node to network.
+int djoin(int udp, char net[], char id[], char bootid[], char ip[], char tcp[], struct addrinfo serverinfo){
+    //verify arguments
+    if(strlen(net) != 3){
+        fprintf(stderr, "net id has wrong size.\n");
+        return -1;
+    }else{
+        for(int i = 0; i < 3; i++){
+            if(!(net[i]<57 && net[i]>47)){
+                fprintf(stderr, "net id is invaid.\n");
+                return -1;
+            }
+        }
+    }
+    if(strlen(id) != 2){
+        fprintf(stderr, "node id has wrong size.\n");
+        return -1;
+    }else{
+        for(int i = 0; i < 2; i++){
+            if(!(id[i]<57 && id[i]>47)){
+                fprintf(stderr, "node id is invaid.\n");
+                return -1;
+            }
+        }
+    }
+    char buff[256];
+    char cmd[40];
+    //if boot id and id are the same, just add a node to network
+    if(strcmp(bootid,id)==0){
+        //create node in the network
+        memset(cmd, 0, sizeof(cmd));
+        memset(buff, 0, sizeof(buff));
+        sprintf(cmd, "REG %s %s %s %s", net, id, ip, tcp);
+        int n = sendto(udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+        if(n == -1){
+            perror("sendto error");
+            return -1;
+        }
+        //confirm node insertion
+        n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+        if(n == -1){
+            perror("rcvfrom error");
+            return -1;
+        }
+        if(strcmp(buff, "OKREG")==0){
+            printf("node inserted.\n");
+        }
+    }
+}
+
+
+//check if node already exists in network, node list is the list of nodes returned by network, returns 1 if it already exists
+int checkfornode(char node_id[], char node_list[]){
+    //divide buffer into tokens
+    //extract the first token
+    char* token = strtok(node_list, " \n");
+    //loop through the string to extract all other tokens
+    for(int i=0; token != NULL; i++ ) {
+        token = strtok(NULL, " \n");
+        if(token!=NULL){
+            if(strcmp(node_id,token)==0){
+                //node already exists
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
