@@ -1,17 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "contact.h"
 
-struct contact{
-    char* id;
-    int fd;
-    char *ip;
-    char *port;
-    struct contact *next;
-};
-
-typedef struct contact* Contact;
-
+//allocates a new contact
 Contact createContact(){
     Contact temp; // declare a Contact
     temp = (Contact)malloc(sizeof(struct contact)); // allocate memory using malloc()
@@ -19,6 +8,7 @@ Contact createContact(){
     return temp;//return the new Contact
 }
 
+//adds new contact to the linked list
 Contact addContact(Contact head, char* id, int fd, char* ip, char* port){ 
     Contact temp,p;// declare two Contacts temp and p
     temp = createContact();//createContact will return a new Contact with data = value and next pointing to NULL.
@@ -50,4 +40,3 @@ Contact getContact(Contact head, char* id){
     }
     return temp;
 }
-
