@@ -50,22 +50,25 @@ int main(int argc, char* argv[]){
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
     //file descriptor set
-    fd_set rfds;
+    fd_set rfds, aux_rfds;
     //number of ready file descriptors
     int counter;
     char buffer[128];
 
+    //reset file descriptor set
+    FD_ZERO(&rfds);
+    //add keyboard to file descriptor set
+    FD_SET(0, &rfds);
+    //add tcp socket to file descriptor set
+    FD_SET(fd_tcp, &rfds);
+
     //program loop
     while(1){
 
-        //reset file descriptor set
-        FD_ZERO(&rfds);
-        //add keyboard to file descriptor set
-        FD_SET(0, &rfds);
-        //add tcp socket to file descriptor set
-        FD_SET(fd_tcp, &rfds);
+        //use auxiliar as not to set everything every iteration
+        aux_rfds = rfds;
 
-        counter = select(fd_tcp+1, &rfds, NULL, NULL, NULL);
+        counter = select(fd_tcp+1, &aux_rfds, NULL, NULL, NULL);
 
         if(counter<=0){
             fprintf(stderr, "select error: %d.\n", counter);
