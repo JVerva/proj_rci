@@ -126,9 +126,17 @@ int main(int argc, char* argv[]){
                 FD_CLR(fd_tcp,&rfds);
                 n = read(0,buffer,128);
                 //create new fd to deal with message
-                //check msg
-                //execute msg command
-                    //create new connection
+                int new_fd;
+                struct sockaddr* addr;
+                socklen_t addr_size = sizeof(addr);
+                if((new_fd = accept(fd_tcp, (struct sockaddr*) &addr, &addr_size)) == -1){
+                    fprintf(stderr, "Error on accept new connection.\n");
+                }else{
+                    //add file descriptor to select checks
+                    FD_SET(new_fd, &rfds);
+                    //create new contact with default data (to be filled later)
+                    addContact(contact_head, "-1", new_fd, NULL, NULL);
+                }
             }
             //any neighbor ready
             contact_aux = contact_head;
