@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include "contact.h"
 
 int inittcpsocket(char[], char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
@@ -77,6 +78,9 @@ int main(int argc, char* argv[]){
             if(FD_ISSET(0, &rfds)){
                 FD_CLR(0,&rfds);
                 n = read(0,buffer,128);
+                if(n == -1){
+                    fprintf(stderr, "read error.\n");
+                }
                 char **args = (char**)malloc(6*sizeof(char**));
                 int cmd = commandcheck(buffer, args);
                 switch(cmd){
@@ -137,7 +141,7 @@ int inittcpsocket(char ip[], char port[]){
     hints.ai_socktype = SOCK_STREAM;
 
     //get address info
-    if(status = getaddrinfo(ip, port, &hints, &res) != 0){
+    if((status = getaddrinfo(ip, port, &hints, &res)) != 0){
         fprintf(stderr, "getaddrinfo error: %d\n", status);
         exit(1);
     }
@@ -166,7 +170,7 @@ int initudpsocket(char ip[], char port[], struct addrinfo **res){
     hints.ai_socktype = SOCK_DGRAM;
 
     //get address info
-    if(status = getaddrinfo(ip, port, &hints, res) != 0){
+    if((status = getaddrinfo(ip, port, &hints, res)) != 0){
         fprintf(stderr, "getaddrinfo error: %d\n", status);
         exit(1);
     }
@@ -342,6 +346,7 @@ int join(int udp, char net[], char id[], char ip[], char tcp[], struct addrinfo 
     if(strcmp(buff, "OKREG")==0){
         printf("node inserted.\n");
     }
+    return 0;
 }
 
 //joins node to network.
@@ -392,6 +397,7 @@ int djoin(int udp, char net[], char id[], char bootid[], char ip[], char tcp[], 
             printf("node inserted.\n");
         }
     }
+    return 0;
 }
 
 //check if node already exists in network, node list is the list of nodes returned by network, returns 1 if it already exists
