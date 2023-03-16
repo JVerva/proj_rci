@@ -27,6 +27,8 @@ int main(int argc, char* argv[]){
     char *id = {"-1"};
     char *reg_ip = (char*)malloc(sizeof(char*));
     char *reg_port = (char*)malloc(sizeof(char*));
+    Contact contact_head=NULL;
+    Contact contact_aux=NULL;
     //get arguments
     if(argc != 5 && argc != 3){
         fprintf(stderr, "wrong number of arguments: %d.\n", argc);
@@ -123,7 +125,21 @@ int main(int argc, char* argv[]){
             if(FD_ISSET(fd_tcp, &rfds)){
                 FD_CLR(fd_tcp,&rfds);
                 n = read(0,buffer,128);
-                printf("socket: %s\n", buffer);
+                //create new fd to deal with message
+                //check msg
+                //execute msg command
+                    //create new connection
+            }
+            //any neighbor ready
+            contact_aux = contact_head;
+            while(contact_aux != NULL){
+                if(FD_ISSET(contact_aux->fd, &aux_rfds)){
+
+
+                    //do stuff
+
+                }
+                contact_aux = contact_aux->next;
             }
             memset(buffer,0,sizeof(buffer));
         }
