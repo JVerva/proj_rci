@@ -9,8 +9,9 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include "contact.h"
+#include "node_protocols.h"
 
-int inittcpsocket(char[], char[]);
+int inittcpsocket(char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
 int commandcheck(char[], char*[]);
 int join(int, char[] , char[], char[], char[], struct addrinfo);
@@ -47,7 +48,7 @@ int main(int argc, char* argv[]){
     struct addrinfo* node_server = (struct addrinfo*)malloc(sizeof(struct addrinfo*));
 
     //init tcp socket
-    int fd_tcp = inittcpsocket(ip, port);
+    int fd_tcp = inittcpsocket(port);
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
@@ -70,7 +71,7 @@ int main(int argc, char* argv[]){
         //use auxiliar as not to set everything every iteration
         aux_rfds = rfds;
 
-        counter = select(fd_tcp+1, &aux_rfds, NULL, NULL, NULL);
+        counter = select(fd_tcp+10, &aux_rfds, NULL, NULL, NULL);
 
         if(counter<=0){
             fprintf(stderr, "select error: %d.\n", counter);
@@ -80,8 +81,8 @@ int main(int argc, char* argv[]){
             //bytes read
             int n;
             //keyboard ready
-            if(FD_ISSET(0, &rfds)){
-                FD_CLR(0,&rfds);
+            if(FD_ISSET(0, &aux_rfds)){
+                //FD_CLR(0,&rfds);
                 n = read(0,buffer,128);
                 if(n == -1){
                     fprintf(stderr, "read error.\n");
@@ -122,30 +123,44 @@ int main(int argc, char* argv[]){
                 free(args);
             }
             //tcp socket ready
-            if(FD_ISSET(fd_tcp, &rfds)){
-                FD_CLR(fd_tcp,&rfds);
-                n = read(0,buffer,128);
+            if(FD_ISSET(fd_tcp, &aux_rfds)){
+                //FD_CLR(fd_tcp,&rfds);
+                //n = read(0,buffer,128);
                 //create new fd to deal with message
+                printf("fired.\n");
                 int new_fd;
                 struct sockaddr* addr;
                 socklen_t addr_size = sizeof(addr);
                 if((new_fd = accept(fd_tcp, (struct sockaddr*) &addr, &addr_size)) == -1){
-                    fprintf(stderr, "Error on accept new connection.\n");
+                    fprintf(stderr, "error accepting new connection.\n");
                 }else{
+                    printf("accepted connection.\n");
                     //add file descriptor to select checks
                     FD_SET(new_fd, &rfds);
                     //create new contact with default data (to be filled later)
-                    addContact(contact_head, "-1", new_fd, NULL, NULL);
+                    contact_head = addContact(contact_head, "-1", new_fd);
                 }
             }
             //any neighbor ready
             contact_aux = contact_head;
+            
             while(contact_aux != NULL){
                 if(FD_ISSET(contact_aux->fd, &aux_rfds)){
-
-
-                    //do stuff
-
+                    n = read(contact_aux->fd,buffer,128);
+                    if(n == -1){
+                        fprintf(stderr, "read error.\n");
+                    }
+                    char **args = (char**)malloc(3*sizeof(char**));
+                    int msg = messagecheck(buffer, args);
+                    switch(msg){
+                        case 0:
+                        //new
+                        break;
+                        case -1:
+                        //error
+                        break;
+                    }
+                    free(args);
                 }
                 contact_aux = contact_aux->next;
             }
@@ -153,11 +168,14 @@ int main(int argc, char* argv[]){
         }
 
     }
+    closeContacts(contact_head);
+    close(fd_tcp);
+    close(fd_udp);
     return 0;
 }
 
 //create a tcp socket, bind to port and listen for incoming connections
-int inittcpsocket(char ip[], char port[]){
+int inittcpsocket(char port[]){
     int status;
     struct addrinfo hints, *res;
     int sockfd;
@@ -166,9 +184,10 @@ int inittcpsocket(char ip[], char port[]){
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
 
     //get address info
-    if((status = getaddrinfo(ip, port, &hints, &res)) != 0){
+    if((status = getaddrinfo(NULL, port, &hints, &res)) != 0){
         fprintf(stderr, "getaddrinfo error: %d\n", status);
         exit(1);
     }
@@ -224,6 +243,10 @@ int commandcheck(char buffer[], char** args){
     //loop through the string to extract all other tokens
     for(int i=0; token != NULL; i++ ) {
         token = strtok(NULL, " \n");
+        if(i>6){
+            fprintf(stderr,"too many arguments.\n");
+            return -1;
+        }
         args[i] = token;
         n++;
     }
@@ -328,7 +351,7 @@ int join(int udp, char net[], char id[], char ip[], char tcp[], struct addrinfo 
 
     //ask for network info
     char buff[256];
-    char cmd[40] = {"NODES \0"};
+    char cmd[40] = {"NODES "};
     strcat(cmd, net);
     int n = sendto(udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){

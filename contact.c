@@ -9,14 +9,12 @@ Contact createContact(){
 }
 
 //adds new contact to the linked list
-Contact addContact(Contact head, char* id, int fd, char* ip, char* port){ 
-    Contact temp,p;// declare two Contacts temp and p
+Contact addContact(Contact head, char* id, int fd){ 
+    Contact temp, p;// declare two Contacts temp and p
     temp = createContact();//createContact will return a new Contact with data = value and next pointing to NULL.
     //set variables
     temp->id = strdup(id);
     temp->fd = fd;
-    temp->ip = strdup(ip);
-    temp->port = strdup(port);
     if(head == NULL){
         head = temp;     //when linked list is empty
     }
@@ -30,6 +28,13 @@ Contact addContact(Contact head, char* id, int fd, char* ip, char* port){
     return head;
 }
 
+void fillContact(Contact contact, char* id, char* ip, char* port){
+    contact->id = strdup(id);
+    contact->ip = strdup(ip);
+    contact->port = strdup(port);
+    return;
+}
+
 //return contact with corresponding id from contact list
 Contact getContact(Contact head, char* id){
     Contact temp;
@@ -39,4 +44,16 @@ Contact getContact(Contact head, char* id){
         }
     }
     return temp;
+}
+
+void closeContacts(Contact head){
+    Contact aux = head;
+    Contact aux1 = head;
+    while(aux!=NULL){
+        close(aux->fd);
+        aux1 = aux;
+        aux = aux->next;
+        free(aux1);
+    }
+    return;
 }
