@@ -12,6 +12,12 @@ struct contact{
 
 typedef struct contact* Contact;
 
+struct destination{
+    char *dest;
+    Contact *route;
+    struct destination *next;
+};
+
 //allocates a new contact
 Contact createContact();
 
@@ -20,3 +26,4 @@ Contact addContact(Contact head, char* id, int fd, char* ip, char* port);
 
 //return contact with corresponding id from contact list
 Contact getContact(Contact head, char* id);
+
