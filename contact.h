@@ -12,10 +12,18 @@ struct contact{
 
 typedef struct contact* Contact;
 
-struct destination{
+struct routing{
     char *dest;
     Contact *route;
-    struct destination *next;
+    struct routing *next;
+};
+
+struct node_info{
+    char *id;
+    char *ext;
+    char *bck;
+    Contact intr;
+    struct routing *rout_table;
 };
 
 //allocates a new contact
