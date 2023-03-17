@@ -14,14 +14,14 @@ typedef struct contact* Contact;
 
 struct routing{
     char *dest;
-    Contact *route;
+    Contact route;
     struct routing *next;
 };
 
 struct node_info{
     char *id;
-    char *ext;
-    char *bck;
+    Contact ext;
+    Contact bck;
     Contact intr;
     struct routing *rout_table;
 };
