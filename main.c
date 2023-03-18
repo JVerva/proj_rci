@@ -23,6 +23,7 @@ int join(int, char[] , char[], char[], char[], struct addrinfo);
 int djoin(int, char[] , char[], char[], char[],char[], struct addrinfo);
 int checkfornode(char[], char[]);
 int leave(int, char[], int, struct addrinfo);
+int show_topology(struct node_info* node);
 
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
 char DEFAULT_IP[] = {"193.136.138.142"};
@@ -511,4 +512,16 @@ int show_topology(struct node_info* node){
         }
     }
     printf("---------------------------------------------------------\n");
+}
+
+//update network topology and node information based on incoming updates from external neighbor
+int extern_rcv(struct node_info *node, char id[], char ip[], char port[]){
+    //maybe check for input error|||||||||||||||||||||||||||
+
+    //check if message is coming from ext neighbor, else do nothing
+    if(strcmp(node->ext->id, id) != 0){
+        return -1;
+    }else{
+        
+    }
 }
