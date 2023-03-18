@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "utils.h"
 
 struct contact{
     char* id;
@@ -23,7 +24,7 @@ Contact addContact(Contact head, char* id, int fd);
 Contact getContact(Contact head, char* id);
 
 //fills struct with Contact information 
-void fillContact(Contact contact, char* id, char* ip, char* port);
+int fillContact(Contact contact, char* id, char* ip, char* port);
 
 //closes fds and frees contact list
 void closeContacts(Contact head);

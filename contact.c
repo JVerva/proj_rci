@@ -28,11 +28,15 @@ Contact addContact(Contact head, char* id, int fd){
     return head;
 }
 
-void fillContact(Contact contact, char* id, char* ip, char* port){
+int fillContact(Contact contact, char* id, char* ip, char* port){
+    //verify arguments
+    if(verifyid(id)!=0){
+        return -1;
+    }
     contact->id = strdup(id);
     contact->ip = strdup(ip);
     contact->port = strdup(port);
-    return;
+    return 0;
 }
 
 //return contact with corresponding id from contact list
