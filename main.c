@@ -10,6 +10,12 @@
 #include <arpa/inet.h>
 #include "contact.h"
 
+#define YEL "\x1b[33m"
+#define WHI "\x1b[37m"
+#define NORM "\x1b[m"
+#define BOLD  "\e[1m"
+#define NBOLD   "\e[m"
+
 int inittcpsocket(char[], char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
 int commandcheck(char[], char*[]);
@@ -472,4 +478,37 @@ int leave(int udp, char net[], int id, struct addrinfo serverinfo){
     }
     printf("node left.\n");
     return 0;
+}
+
+int show_topology(struct node_info* node){
+    Contact aux;
+
+    printf(" %s%s%-10s%s | %s%-7s%s | %s%-17s%s | %s%s%s%s\n", BOLD, YEL, "NEIGHBOR", WHI, YEL, "ID", WHI, YEL, "IP", WHI, YEL, "PORT", NORM, NBOLD);
+    printf("---------------------------------------------------------\n");
+    
+    if(strcmp(node->ext->id, node->id)==0){
+        printf("*%-10s | %-7s | %-17s | %s\n", "EXT", node->id, "self", "self");
+    }else{
+        printf("*%-10s | %-7s | %-17s | %s\n", "EXT", node->ext->id, node->ext->ip, node->ext->port);
+    }
+    printf("---------------------------------------------------------\n");
+    
+    if(strcmp(node->bck->id, node->id)==0){
+        printf("*%-10s | %-7s | %-17s | %s\n", "BCK", node->id, "self", "self");
+    }else{
+        printf("*%-10s | %-7s | %-17s | %s\n", "BCK", node->bck->id, node->bck->ip, node->bck->port);
+    }
+    printf("---------------------------------------------------------\n");
+
+    if(node->intr == NULL){
+        printf("*%-10s | %-7s | %-17s | %s\n", "INTR", "--", "--", "--");
+    }else{
+        printf("*%-10s | %-7s | %-17s | %s\n", "INTR", node->intr->id, node->intr->ip, node->intr->port);
+        aux = node->intr->next;
+        while(aux != NULL){
+            printf(" %-10s | %-7s | %-17s | %s\n", " ", aux->id, aux->ip, aux->port);
+            aux = aux->next;     
+        }
+    }
+    printf("---------------------------------------------------------\n");
 }
