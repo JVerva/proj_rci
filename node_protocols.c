@@ -72,3 +72,20 @@ int messagecheck(char buffer[], char** args){
     }
     return index;
 }
+
+int extern_rcv(struct node_info *node, char id[], char ip[], char port[]){
+    //maybe check for input error|||||||||||||||||||||||||||
+
+    //check if message is coming from ext neighbor, else do nothing
+    if(strcmp(node->ext->id, id) != 0){
+        return -1;
+    }else{
+        //update backup neighbor contact information
+        strcpy(id, node->bck->id);
+        strcpy(ip, node->bck->ip);
+        strcpy(port, node->bck->port);
+        strcpy("-1", node->bck->fd);//|||||||||||
+
+        //UPDATE ROUTING TABLE?|||||||||||||
+    }
+}
