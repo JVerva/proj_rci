@@ -11,6 +11,6 @@
 #include "utils.h"
 
 int commandcheck(char[], char*[]);
-int join(int, char[] , char[], char[], char[], struct addrinfo);
-int djoin(int, char[] , char[], char[], char[],char[], struct addrinfo);
+int join(int, int, char[] , char[], char[], char[], struct addrinfo);
+int djoin(int, int, char[] , char[], char[], char[],char[], struct addrinfo);
 int leave(int, char[], int, struct addrinfo);

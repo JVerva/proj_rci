@@ -45,3 +45,25 @@ int checkfornode(char node_id[], char node_list[]){
     }
     return 0;
 }
+
+int getnodeinfo(char node_id[], char node_list[], char ** ip, char ** port){
+    //divide buffer into tokens
+    //extract the first token
+    char* token = strtok(node_list, " \n");
+    //loop through the string to extract all other tokens
+    for(int i=0; token != NULL; i++ ) {
+        token = strtok(NULL, " \n");
+        if(token!=NULL){
+            if(strcmp(node_id,token)==0){
+                //node exists
+                token = strtok(NULL, " ");
+                *ip = strdup(token);
+                token = strtok(NULL, " ");
+                *port = strdup(token);
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+

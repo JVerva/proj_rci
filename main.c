@@ -27,6 +27,7 @@ int main(int argc, char* argv[]){
     char *reg_port = (char*)malloc(sizeof(char*));
     Contact contact_head=NULL;
     Contact contact_aux=NULL;
+    int joined = 0;
     //get arguments
     if(argc != 5 && argc != 3){
         fprintf(stderr, "wrong number of arguments: %d.\n", argc);
@@ -79,7 +80,6 @@ int main(int argc, char* argv[]){
             int n;
             //keyboard ready
             if(FD_ISSET(0, &aux_rfds)){
-                //FD_CLR(0,&rfds);
                 n = read(0,buffer,128);
                 if(n == -1){
                     fprintf(stderr, "read error.\n");
@@ -92,14 +92,18 @@ int main(int argc, char* argv[]){
                         break;
                     case 0:
                         //join
-                        id = strdup(args[1]);
-                        net = strdup(args[0]);
-                        join(fd_udp, net, id, ip, port, *node_server);
-                        //impedir um segundo join |||||||||||||||||||||||||||
+                        if(joined == 0){
+                            id = strdup(args[1]);
+                            net = strdup(args[0]);
+                            join(fd_udp,fd_tcp, net, id, ip, port, *node_server);
+                            joined = 1;
+                        }else{
+                            fprintf(stderr,"already joined the network as node %s.\n", id);
+                        }
                         break;
                     case 1:
                         //djoin
-                        djoin(fd_udp, args[0], args[1], args[2], args[3], args[4], *node_server);
+                        djoin(fd_udp,fd_tcp, args[0], args[1], args[2], args[3], args[4], *node_server);
                         break;
                     case 9:
                         //leave
@@ -107,7 +111,9 @@ int main(int argc, char* argv[]){
                             fprintf(stderr,"node not registered.\n");
                         }else{
                             leave(fd_udp, net, atoi(id), *node_server);
+                            //reset variables
                             strcpy(id, "-1");
+                            joined = 0;
                         }
                         break;
                     case 10:
@@ -121,10 +127,7 @@ int main(int argc, char* argv[]){
             }
             //tcp socket ready
             if(FD_ISSET(fd_tcp, &aux_rfds)){
-                //FD_CLR(fd_tcp,&rfds);
-                //n = read(0,buffer,128);
                 //create new fd to deal with message
-                printf("fired.\n");
                 int new_fd;
                 struct sockaddr* addr;
                 socklen_t addr_size = sizeof(addr);
@@ -151,12 +154,16 @@ int main(int argc, char* argv[]){
                     int msg = messagecheck(buffer, args);
                     switch(msg){
                         case 0:
-                        //new
-                        fillContact(contact_aux, args[0], args[1], args[2]);
+                            //new
+                            if(fillContact(contact_aux, args[0], args[1], args[2])==0){
+                                printf("added new contact, %s.\n", args[0]);
+                            }else{
+                                fprintf(stderr, "failed to add new contact.\n");
+                            }
                         break;
                         case -1:
-                        fprintf(stderr, "error: message does not correspond to protocol.\n");
-                        //error
+                            //error
+                            fprintf(stderr, "error: message does not correspond to protocol.\n");
                         break;
                     }
                     free(args);
