@@ -2,9 +2,19 @@
 
 const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTENT"}; 
 
+struct node_info* initNode_info(char id[]){
+    struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
+    temp->ext = createContact();//must be closed|||||||||||||||
+    strcpy(temp->ext->id, id);
+    temp->bck = createContact();
+    strcpy(temp->bck->id, id);
+    return temp;
+}
+
 void closeNode_info(struct node_info *node){
     free(node->ext);
     free(node->bck);
+    closeContacts(node->intr);
     free(node);
 }
 

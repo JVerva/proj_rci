@@ -5,10 +5,10 @@
 #include "utils.h"
 
 struct contact{
-    char* id;
+    char id[3];
     int fd;
-    char *ip;
-    char *port;
+    char ip[17];
+    char port[6];
     struct contact *next;
 };
 

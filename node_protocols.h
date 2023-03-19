@@ -5,12 +5,17 @@
 #include "utils.h"
 
 struct node_info{
-    char *id;
+    char id[3];
     Contact ext;
     Contact bck;
     Contact intr;
     struct routing *rout_table;
 };
+
+//initializes node_info struct as the default start settings
+//argument id is the Node's own id
+//returns new node_info struct 
+struct node_info* initNode_info(char id[]);
 
 //frees node_info struct
 void closeNode_info(struct node_info *node);
