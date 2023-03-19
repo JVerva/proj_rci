@@ -185,6 +185,7 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
     n=getaddrinfo(t_ip, t_port ,&hints, &res);
     if(n!=0){
         fprintf(stderr,"error getting node address.\n");
+        perror("error");
         return -1;
     }
 
@@ -270,11 +271,11 @@ int djoin(int fd_udp,int fd_tcp, char net[], char id[], char bootid[], char ip[]
         memset(&hints,0,sizeof hints);
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
-        
 
         n=getaddrinfo(t_ip, t_port ,&hints, &res);
         if(n!=0){
-            fprintf(stderr,"error getting node address.\n");
+            fprintf(stderr,"error getting node address. %d\n", n);
+            perror("error");
             return -1;
         }
 
@@ -355,4 +356,5 @@ int show_topology(struct node_info* node){
         }
     }
     printf("---------------------------------------------------------\n");
+    return 0;
 }

@@ -86,8 +86,9 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
         strcpy(node->bck->id, id_rcv);
         strcpy(node->bck->ip, ip);
         strcpy(node->bck->port, port);
-        strcpy(node->bck->fd, "-1");//|||||||||||
+        node->bck->fd = -1; //|||||||||||
 
         //UPDATE ROUTING TABLE?|||||||||||||
     }
+    return 0;
 }

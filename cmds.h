@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include "utils.h"
-#include "contact.h"
 #include "node_protocols.h"
 
 #define YEL "\x1b[33m"

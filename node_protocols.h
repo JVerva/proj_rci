@@ -17,4 +17,4 @@ struct node_info{
 int messagecheck(char buffer[], char** args);
 
 //update network topology and node information based on incoming updates from external neighbor
-int extern_rcv(struct node_info *node, char id[], char ip[], char port[]);
+int extern_rcv(struct node_info *node, char id_sender[], char id_rcv[], char ip[], char port[]);

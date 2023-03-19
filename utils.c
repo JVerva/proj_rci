@@ -19,7 +19,7 @@ int verifyid(char* id){
     if(strlen(id) != 2){
         return 1;
     }else{
-        for(int i = 0; i < 3; i++){
+        for(int i = 0; i < 2; i++){
             if(!(id[i]<57 && id[i]>47)){
                 return 1;
             }
