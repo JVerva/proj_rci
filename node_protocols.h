@@ -1,8 +1,8 @@
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "contact.h"
+#include "utils.h"
 
 struct node_info{
     char *id;
@@ -11,6 +11,9 @@ struct node_info{
     Contact intr;
     struct routing *rout_table;
 };
+
+//frees node_info struct
+void closeNode_info(struct node_info *node);
 
 //processes messages and checks if they are valid, returns message index if they are, else returns -1 and prints erros msg
 //args gets filled with message arguments
