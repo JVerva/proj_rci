@@ -110,3 +110,23 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
     }
     return 0;
 }
+
+int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], char port[]){
+    //INPUT ERROR CHECK||||||||||||||||||
+    
+    //unknown contact
+    if(strcmp(sender->id, "-1") == 0){
+        fillContact(sender, id_rcv, ip, port);
+    }
+    //if node is alone, incoming node becomes its ext
+    if(strcmp(node->id, node->ext->id) == 0){
+
+    }
+}
+
+
+int promoteEXT(struct node_info* node, Contact promotee){
+    fillContact(node->ext, promotee->id, promotee->ip, promotee->port);
+    removeContact(node, promotee);
+    return 0;
+}

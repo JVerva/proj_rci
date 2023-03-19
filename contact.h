@@ -20,6 +20,9 @@ Contact createContact();
 //adds new contact to the linked list
 Contact addContact(Contact head, char* id, int fd);
 
+//removes contact from list and frees memory
+Contact removeContact(Contact head, Contact deprecated);
+
 //return contact with corresponding id from contact list
 Contact getContact(Contact head, char* id);
 

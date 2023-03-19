@@ -28,14 +28,40 @@ Contact addContact(Contact head, char* id, int fd){
     return head;
 }
 
+Contact removeContact(Contact head, Contact deprecated){//can be changed as to be summoned with the deprecated node's id||||||||||||||
+    Contact front = head, back = NULL, new_head = head;
+
+    while(front != NULL){
+        //deprecated found
+        if(strcmp(front->id, deprecated->id) == 0){
+            //if deprecated is the head
+            if(back == NULL){
+                new_head = front->next;
+            //if deprecated is the tail
+            }else if(front->next == NULL){
+                back->next = NULL;
+            //if deprecated is on the middle
+            }else{
+                back->next = front->next;
+            }
+            close(deprecated);
+            break;
+        }
+    }
+    return new_head;
+}
+
 int fillContact(Contact contact, char* id, char* ip, char* port){
     //verify arguments
     if(verifyid(id)!=0){
         return -1;
     }
-    contact->id = strdup(id);
-    contact->ip = strdup(ip);
-    contact->port = strdup(port);
+    strcpy(contact->id, id);
+    strcpy(contact->ip, ip);
+    strcpy(contact->port, port);
+    //contact->id = strdup(id);
+    //contact->ip = strdup(ip);
+    //contact->port = strdup(port);
     return 0;
 }
 
@@ -54,7 +80,7 @@ void closeContacts(Contact head){
     Contact aux = head;
     Contact aux1 = head;
     while(aux!=NULL){
-        close(aux->fd);
+        close(aux->fd);//porque close do fd?|||||||||||||||||||||||
         aux1 = aux;
         aux = aux->next;
         free(aux1);

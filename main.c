@@ -99,7 +99,7 @@ int main(int argc, char* argv[]){
                             id = strdup(args[1]);
                             net = strdup(args[0]);
                             join(fd_udp,fd_tcp, net, id, ip, port, *node_server)
-                            //node_info = initNode_info(id);
+                            //Snode_info = initNode_info(id);
                             joined = 1;
                         }else{
                             fprintf(stderr,"already joined the network as node %s.\n", id);
