@@ -14,7 +14,7 @@ int verifynet(char* net){
     return 0;
 }
 
-//cheks if id id valid
+//checks if id id valid
 int verifyid(char* id){
     if(strlen(id) != 2){
         return 1;

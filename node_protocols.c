@@ -2,6 +2,12 @@
 
 const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTENT"}; 
 
+void closeNode_info(struct node_info *node){
+    free(node->ext);
+    free(node->bck);
+    free(node);
+}
+
 int messagecheck(char buffer[], char** args){
     int index = 0;
     int n = -1;
@@ -75,8 +81,10 @@ int messagecheck(char buffer[], char** args){
 
 int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[], char port[]){
     //maybe check for input error|||||||||||||||||||||||||||
-
-    //CORRELATE FD TO ID? OR SIMPLY RECIEVE ID?
+    if(verifyid(id_rcv)!=0){
+        printf("EXTERN message with invalid id\n");
+        return -1;
+    }
 
     //check if message is coming from ext neighbor, else do nothing, a bad behaving node may have sent the message instead
     if(strcmp(node->ext->id, id_sender) != 0){

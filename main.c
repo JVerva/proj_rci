@@ -50,6 +50,11 @@ int main(int argc, char* argv[]){
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
+    //initialize Node default information
+    struct node_info *node_info = (struct node_info*)malloc(sizeof(struct node_info));
+    node_info->ext = createContact();//must be closed|||||||||||||||
+    node_info->bck = createContact();
+
     //file descriptor set
     fd_set rfds, aux_rfds;
     //number of ready file descriptors
