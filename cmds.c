@@ -351,7 +351,9 @@ int show_topology(struct node_info* node){
         printf("*%-10s | %-7s | %-17s | %s\n", "INTR", node->intr->id, node->intr->ip, node->intr->port);
         aux = node->intr->next;
         while(aux != NULL){
-            printf(" %-10s | %-7s | %-17s | %s\n", " ", aux->id, aux->ip, aux->port);
+            if(strcmp(aux->id, "-1") != 0){
+                printf(" %-10s | %-7s | %-17s | %s\n", " ", aux->id, aux->ip, aux->port);
+            }
             aux = aux->next;     
         }
     }

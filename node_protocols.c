@@ -101,9 +101,7 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
         return -1;
     }else{
         //update backup neighbor contact information
-        strcpy(node->bck->id, id_rcv);
-        strcpy(node->bck->ip, ip);
-        strcpy(node->bck->port, port);
+        fillContact(node->bck, id_rcv, ip, port);
         node->bck->fd = -1; //|||||||||||
 
         //UPDATE ROUTING TABLE?|||||||||||||
@@ -120,8 +118,12 @@ int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], ch
     }
     //if node is alone, incoming node becomes its ext
     if(strcmp(node->id, node->ext->id) == 0){
-
+        promoteEXT(node, sender);
+    //else its a new internal neighbor
+    }else{
+        //send EXTERN message
     }
+
 }
 
 
