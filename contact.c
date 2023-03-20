@@ -32,7 +32,7 @@ Contact removeContact(Contact head, Contact deprecated){//can be changed as to b
     Contact front = head, back = NULL, new_head = head;
 
     while(front != NULL){
-        //deprecated found
+        //if deprecated is found
         if(strcmp(front->id, deprecated->id) == 0){
             //if deprecated is the head
             if(back == NULL){
@@ -40,13 +40,15 @@ Contact removeContact(Contact head, Contact deprecated){//can be changed as to b
             //if deprecated is the tail
             }else if(front->next == NULL){
                 back->next = NULL;
-            //if deprecated is on the middle
+            //if deprecated is in the middle
             }else{
                 back->next = front->next;
             }
             close(deprecated);
             break;
         }
+        back = front;
+        front = front->next;
     }
     return new_head;
 }
