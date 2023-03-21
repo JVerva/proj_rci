@@ -110,98 +110,59 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
         return -1;
     }
     //ask for network info
-    char buff[256];
+    int new_fd;
     char* node_list;
-    char cmd[40] = {"NODES "};
-    strcat(cmd, net);
-    int n = sendto(fd_udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
-    if(n == -1){
-        perror("sendto error");
-        return -1;
-    }
-    n = recvfrom(fd_udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
-    if(n == -1){
-        perror("rcvfrom error");
+    if(getnodelist(fd_udp, serverinfo, net, &node_list)!=0){
         return -1;
     }
     //check if id already exists in the network
     int changed = 1;
     char* og_id = strdup(id);
-    char* tmpbuff = strdup(buff);
-    node_list = strdup(buff);
-    //if it does get the next free id, and add it with that 
-    while(checkfornode(id, tmpbuff)!=0){
+    //if it does, get the next free id, and add it with that 
+    while(checkfornode(id, node_list)!=0){
         int iid = atoi(id);
-        iid++;
-        sprintf(id, "%.2d", iid);
-        tmpbuff = strdup(buff);
+        sprintf(id, "%.2d", ++iid);
         changed = 0;
     }
     if(changed == 0){
         printf("%s was already in the network, using id %s instead.\n", og_id, id);
     }
     //create node in the network
-    memset(cmd, 0, sizeof(cmd));
-    memset(buff, 0, sizeof(buff));
-    sprintf(cmd, "REG %s %s %s %s", net, id, ip, tcp);
-    n = sendto(fd_udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
-    if(n == -1){
-        perror("sendto error");
+    if(createnode(fd_udp, serverinfo, net, id, ip, tcp)!=0){
         return -1;
     }
-    //confirm node insertion
-    n = recvfrom(fd_udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
-    if(n == -1){
-        perror("rcvfrom error");
-        return -1;
+    printf("node inserted.\n");
+    //check if there are any other nodes in the network
+    if(isnetworkempty(node_list)==0){
+        printf("first node in the network.\n");
+    }else{
+        //ask which node you want to connect
+        char node[10];
+        char *t_ip, *t_port;
+        printf("which node do you wish to connect to?\n %s\n", node_list);
+        int valid = 1;
+        do{
+            scanf("%s", node);
+            if(verifyid(node)!=0){
+                fprintf(stderr,"wrong format for node id.\n");
+            }else if(checkfornode(node, node_list)!=1){
+                fprintf(stderr, "node does not exist in the network.\n");
+            }else{
+                getnodeinfo(node, node_list, &t_ip, &t_port);
+                valid = 0;
+            }
+        }while(valid != 0);
+
+        new_fd = connecttonode(t_ip, t_port);
+
+        printf("connected to node sucessfully.\n");
+
+        //send connection message
+        char msg[30];
+        sprintf(msg, "NEW %s %s %s", id, ip, tcp);
+        write(new_fd, msg ,30);
     }
-    if(strcmp(buff, "OKREG")==0){
-        printf("node inserted.\n");
-    }
-    //ask which node you want to connect
-    char node[10];
-    char *t_ip, *t_port;
-    printf("which node do you wish to connect to?\n %s\n", node_list);
-    int valid = 1;
-    do{
-        scanf("%s", node);
-        if(verifyid(node)!=0){
-            fprintf(stderr,"wrong format for node id.\n");
-        }else if(checkfornode(node, node_list)!=1){
-            fprintf(stderr, "node does not exist in the network.\n");
-        }else{
-            getnodeinfo(node, node_list, &t_ip, &t_port);
-            valid = 0;
-        }
-    }while(valid != 0);
-
-    //try to connect to node
-    struct addrinfo hints, *res;
-    memset(&hints,0,sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    
-
-    n=getaddrinfo(t_ip, t_port ,&hints, &res);
-    if(n!=0){
-        fprintf(stderr,"error getting node address.\n");
-        return -1;
-    }
-
-    n=connect(fd_tcp,res->ai_addr,res->ai_addrlen);
-    if(n==-1){
-        fprintf(stderr,"error connecting to node.\n");
-        return -1;
-    }
-
-    printf("connected to node sucessfully.\n");
-
-    //send connection message
-    char msg[30];
-    sscanf(msg, "NEW %s %s %s", id, ip, tcp);
-    write(fd_tcp, msg ,30);
-
-    return 0;
+    return new_fd;
 }
 
 //joins node to network.
@@ -221,6 +182,7 @@ int djoin(int fd_udp,int fd_tcp, char net[], char id[], char bootid[], char ip[]
     }
     char buff[256];
     char cmd[40];
+    int new_fd;
     //create node in the network
     memset(cmd, 0, sizeof(cmd));
     memset(buff, 0, sizeof(buff));
@@ -266,32 +228,14 @@ int djoin(int fd_udp,int fd_tcp, char net[], char id[], char bootid[], char ip[]
             return -1;
         }
 
-        struct addrinfo hints, *res;
-        memset(&hints,0,sizeof hints);
-        hints.ai_family = AF_INET;
-        hints.ai_socktype = SOCK_STREAM;
-        
-
-        n=getaddrinfo(t_ip, t_port ,&hints, &res);
-        if(n!=0){
-            fprintf(stderr,"error getting node address.\n");
-            return -1;
-        }
-
-        n=connect(fd_tcp,res->ai_addr,res->ai_addrlen);
-        if(n==-1){
-            fprintf(stderr,"error connecting to node.\n");
-            return -1;
-        }
-
-        printf("connected to node sucessfully.\n");
+        new_fd = connecttonode(t_ip, t_port);
 
         //send connection message
         char msg[30];
         sscanf(msg, "NEW %s %s %s", id, ip, tcp);
-        write(fd_tcp, msg ,30);
+        write(new_fd, msg ,30);
     }
-    return 0;
+    return new_fd;
 }
 
 //unregisters node from network
@@ -301,7 +245,7 @@ int leave(int udp, char net[], int id, struct addrinfo serverinfo){
     char cmd[13];
     char ok_unreg[] = "OKUNREG";
     sprintf(cmd, "UNREG %s %.2d", net, id);
-    printf("%s\n",cmd);
+
 
     int n = sendto(udp, cmd, 12, 0, serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){

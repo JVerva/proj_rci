@@ -118,6 +118,9 @@ int main(int argc, char* argv[]){
                         break;
                     case 10:
                         //exit
+                        closeContacts(contact_head);
+                        close(fd_tcp);
+                        close(fd_udp);
                         return 0;
                     default:
                         fprintf(stderr, "command not yet implemented.\n");
@@ -174,9 +177,6 @@ int main(int argc, char* argv[]){
         }
 
     }
-    closeContacts(contact_head);
-    close(fd_tcp);
-    close(fd_udp);
     return 0;
 }
 
