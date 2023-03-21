@@ -111,8 +111,9 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
     }
     //ask for network info
     int new_fd;
-    char* node_list;
-    if(getnodelist(fd_udp, serverinfo, net, &node_list)!=0){
+    char node_list[256];
+    memset(node_list,0,256);
+    if(getnodelist(fd_udp, serverinfo, net, node_list)!=0){
         return -1;
     }
     //check if id already exists in the network
@@ -138,7 +139,9 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
     }else{
         //ask which node you want to connect
         char node[10];
-        char *t_ip, *t_port;
+        char t_ip[20], t_port[6];
+        memset(t_ip,0,20);
+        memset(t_port,0,6);
         printf("which node do you wish to connect to?\n %s\n", node_list);
         int valid = 1;
         do{
@@ -154,8 +157,6 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
         }while(valid != 0);
 
         new_fd = connecttonode(t_ip, t_port);
-
-        printf("connected to node sucessfully.\n");
 
         //send connection message
         char msg[30];
@@ -242,6 +243,7 @@ int djoin(int fd_udp,int fd_tcp, char net[], char id[], char bootid[], char ip[]
 int leave(int udp, char net[], int id, struct addrinfo serverinfo){
     //send leave command
     char buff[256];
+    memset(buff,0,256);
     char cmd[13];
     char ok_unreg[] = "OKUNREG";
     sprintf(cmd, "UNREG %s %.2d", net, id);

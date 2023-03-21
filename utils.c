@@ -66,7 +66,7 @@ int isnetworkempty(char node_list[]){
     }
 }
 
-int getnodeinfo(char node_id[], char node_list[], char ** ip, char ** port){
+int getnodeinfo(char node_id[], char node_list[], char ip[], char port[]){
     //divide buffer into tokens
     //extract the first token
     char* temp = strdup(node_list);
@@ -77,10 +77,10 @@ int getnodeinfo(char node_id[], char node_list[], char ** ip, char ** port){
         if(token!=NULL){
             if(strcmp(node_id,token)==0){
                 //node exists
-                token = strtok(NULL, " ");
-                *ip = strdup(token);
-                token = strtok(NULL, " ");
-                *port = strdup(token);
+                token = strtok(NULL, " \n");
+                strcpy(ip,token);
+                token = strtok(NULL, " \n");
+                strcpy(port,token);
                 free(temp);
                 return 0;
             }
@@ -97,10 +97,11 @@ int connecttonode(char *t_ip, char *t_port){
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
+    printf("%s, %s.\n", t_ip, t_port);
+
     int n=getaddrinfo(t_ip, t_port ,&hints, &res);
     if(n!=0){
-        fprintf(stderr,"error getting node address.\n");
-        perror("error");
+        printf("error getting node address %d.\n",n);
         return -1;
     }
     
@@ -108,7 +109,7 @@ int connecttonode(char *t_ip, char *t_port){
 
     n=connect(fd_tcp,res->ai_addr,res->ai_addrlen);
     if(n==-1){
-        fprintf(stderr,"error connecting to node.\n");
+        perror("error connecting to node");
         return -1;
     }
 
@@ -118,8 +119,7 @@ int connecttonode(char *t_ip, char *t_port){
 }
 
 //gets nodelist from network
-int getnodelist(int fd_udp,struct addrinfo serverinfo, char* net, char** node_list){
-    char buff[256];
+int getnodelist(int fd_udp,struct addrinfo serverinfo, char* net, char node_list[]){
     char cmd[10] = {"NODES "};
     strcat(cmd, net);
     int n = sendto(fd_udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
@@ -127,12 +127,11 @@ int getnodelist(int fd_udp,struct addrinfo serverinfo, char* net, char** node_li
         perror("sendto error");
         return -1;
     }
-    n = recvfrom(fd_udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    n = recvfrom(fd_udp, node_list,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
     if(n == -1){
         perror("rcvfrom error");
         return -1;
     }
-    *node_list = strdup(buff);
     return 0;
 }
 

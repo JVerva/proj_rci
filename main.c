@@ -166,7 +166,7 @@ int main(int argc, char* argv[]){
                         break;
                         case -1:
                             //error
-                            fprintf(stderr, "error: message does not correspond to protocol.\n");
+                            fprintf(stderr, "error: message does not correspond to node protocol.\n");
                         break;
                     }
                     free(args);
