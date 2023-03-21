@@ -151,7 +151,7 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
             }else if(checkfornode(node, node_list)!=1){
                 fprintf(stderr, "node does not exist in the network.\n");
             }else{
-                getnodeinfo(node, node_list, &t_ip, &t_port);
+                getnodeinfo(node, node_list, t_ip, t_port);
                 valid = 0;
             }
         }while(valid != 0);
@@ -181,50 +181,24 @@ int djoin(int fd_udp,int fd_tcp, char net[], char id[], char bootid[], char ip[]
         fprintf(stderr, "boot node id is invaid.\n");
         return -1;
     }
-    char buff[256];
-    char cmd[40];
     int new_fd;
     //create node in the network
-    memset(cmd, 0, sizeof(cmd));
-    memset(buff, 0, sizeof(buff));
-    sprintf(cmd, "REG %s %s %s %s", net, id, ip, tcp);
-    int n = sendto(fd_udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
-    if(n == -1){
-        perror("sendto error");
+    if(createnode(fd_udp, serverinfo, net, id, ip, tcp)!=0){
         return -1;
     }
-    //confirm node insertion
-    n = recvfrom(fd_udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
-    if(n == -1){
-        perror("rcvfrom error");
-        return -1;
-    }
-    if(strcmp(buff, "OKREG")==0){
-        printf("node inserted.\n");
-    }
-
+    printf("node inserted.\n");
 
     //if boot id and id are not same, connect to boot node
     if(strcmp(bootid,id)!=0){
         //get node list
-        char node_list[128];
-        //ask for network info
-        char cmd[10] = {"NODES "};
-        strcat(cmd, net);
-        int n = sendto(fd_udp, cmd ,9,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
-        if(n == -1){
-            perror("sendto error");
+        char node_list[256];
+        memset(node_list,0,256);
+        if(getnodelist(fd_udp, serverinfo, net, node_list)!=0){
             return -1;
         }
-        n = recvfrom(fd_udp, node_list,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
-        if(n == -1){
-            perror("rcvfrom error");
-            return -1;
-        }
-
         //try to connect
-        char *t_ip, *t_port;
-        if(getnodeinfo(bootid, node_list, &t_ip, &t_port)!=0){
+        char t_ip[20], t_port[6];
+        if(getnodeinfo(bootid, node_list, t_ip, t_port)!=0){
             fprintf(stderr,"error get node info.\n");
             return -1;
         }
