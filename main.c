@@ -50,6 +50,9 @@ int main(int argc, char* argv[]){
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
+    //Node information
+    struct node_info *node_info;
+
     //file descriptor set
     fd_set rfds, aux_rfds;
     //number of ready file descriptors
@@ -95,7 +98,8 @@ int main(int argc, char* argv[]){
                         if(joined == 0){
                             id = strdup(args[1]);
                             net = strdup(args[0]);
-                            join(fd_udp,fd_tcp, net, id, ip, port, *node_server);
+                            join(fd_udp,fd_tcp, net, id, ip, port, *node_server)
+                            //Snode_info = initNode_info(id);
                             joined = 1;
                         }else{
                             fprintf(stderr,"already joined the network as node %s.\n", id);
@@ -104,15 +108,16 @@ int main(int argc, char* argv[]){
                     case 1:
                         //djoin
                         djoin(fd_udp,fd_tcp, args[0], args[1], args[2], args[3], args[4], *node_server);
+                        node_info = initNode_info(id);
                         break;
                     case 9:
                         //leave
-                        if(strcmp(id, "-1")==0){
+                        if(joined == 0){
                             fprintf(stderr,"node not registered.\n");
                         }else{
                             leave(fd_udp, net, atoi(id), *node_server);
                             //reset variables
-                            strcpy(id, "-1");
+                            closeNode_info(node_info);
                             joined = 0;
                         }
                         break;

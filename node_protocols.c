@@ -2,6 +2,22 @@
 
 const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTENT"}; 
 
+struct node_info* initNode_info(char id[]){
+    struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
+    temp->ext = createContact();//must be closed|||||||||||||||
+    strcpy(temp->ext->id, id);
+    temp->bck = createContact();
+    strcpy(temp->bck->id, id);
+    return temp;
+}
+
+void closeNode_info(struct node_info *node){
+    free(node->ext);
+    free(node->bck);
+    closeContacts(node->intr);
+    free(node);
+}
+
 int messagecheck(char buffer[], char** args){
     int index = 0;
     int n = -1;
@@ -73,4 +89,48 @@ int messagecheck(char buffer[], char** args){
         return -1;
     }
     return index;
+}
+
+int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[], char port[]){
+    //maybe check for input error|||||||||||||||||||||||||||
+    if(verifyid(id_rcv)!=0){
+        printf("EXTERN message with invalid id\n");
+        return -1;
+    }
+
+    //check if message is coming from ext neighbor, else do nothing, a bad behaving node may have sent the message instead
+    if(strcmp(node->ext->id, id_sender) != 0){
+        return -1;
+    }else{
+        //update backup neighbor contact information
+        fillContact(node->bck, id_rcv, ip, port);
+        node->bck->fd = -1; //|||||||||||
+
+        //UPDATE ROUTING TABLE?|||||||||||||
+    }
+    return 0;
+}
+
+int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], char port[]){
+    //INPUT ERROR CHECK||||||||||||||||||
+    
+    //unknown contact
+    if(strcmp(sender->id, "-1") == 0){
+        fillContact(sender, id_rcv, ip, port);
+    }
+    //if node is alone, incoming node becomes its ext
+    if(strcmp(node->id, node->ext->id) == 0){
+        promoteEXT(node, sender);
+    //else its a new internal neighbor
+    }else{
+        //send EXTERN message
+    }
+
+}
+
+
+int promoteEXT(struct node_info* node, Contact promotee){
+    fillContact(node->ext, promotee->id, promotee->ip, promotee->port);
+    removeContact(node, promotee);
+    return 0;
 }

@@ -5,10 +5,10 @@
 #include "utils.h"
 
 struct contact{
-    char* id;
+    char id[3];
     int fd;
-    char *ip;
-    char *port;
+    char ip[17];
+    char port[6];
     struct contact *next;
 };
 
@@ -19,6 +19,9 @@ Contact createContact();
 
 //adds new contact to the linked list
 Contact addContact(Contact head, char* id, int fd);
+
+//removes contact from list and frees memory
+Contact removeContact(Contact head, Contact deprecated);
 
 //return contact with corresponding id from contact list
 Contact getContact(Contact head, char* id);
