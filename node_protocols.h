@@ -15,7 +15,7 @@ struct node_info{
 //initializes node_info struct as the default start settings
 //argument id is the Node's own id
 //returns new node_info struct 
-struct node_info* initNode_info(char id[]);
+struct node_info* initNode_info();
 
 //frees node_info struct
 void closeNode_info(struct node_info *node);
@@ -24,8 +24,13 @@ void closeNode_info(struct node_info *node);
 //args gets filled with message arguments
 int messagecheck(char buffer[], char** args);
 
+int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], char port[]);
+
 //update network topology and node information based on incoming updates from external neighbor
 int extern_rcv(struct node_info *node, char id_sender[], char id_rcv[], char ip[], char port[]);
 
 //promote internal neighbor to ext
 int promoteEXT(struct node_info* node, Contact promotee);
+
+//sends new msg
+int new_send(int fd, char id[], char ip[], char tcp[]);

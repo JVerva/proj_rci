@@ -61,7 +61,7 @@ int commandcheck(char buffer[], char** args){
             index = 4;
         }
     }else if(strcmp(cmd,CMDS[5])==0){
-        if(n!=2){
+        if(n!=1){
             fprintf(stderr, "%s error: wrong number of arguments.\n", CMDS[5]);
             return -1;
         }else if(strcmp(args[0],CMDS[6])==0){
@@ -99,7 +99,7 @@ int commandcheck(char buffer[], char** args){
 }
 
 //joins node to network. if node id is already in the networks, use a new free one.
-int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], struct addrinfo serverinfo){
+int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char ip[], char tcp[], struct addrinfo serverinfo){
     //verify arguments
     if(verifynet(net)!=0){
         fprintf(stderr, "net id is invaid.\n");
@@ -132,9 +132,14 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
     if(createnode(fd_udp, serverinfo, net, id, ip, tcp)!=0){
         return -1;
     }
+    //set node info id
+    strcpy(nodeinfo->id,id);
+
     printf("node inserted.\n");
     //check if there are any other nodes in the network
     if(isnetworkempty(node_list)==0){
+        //set node info exter
+        strcpy(nodeinfo->ext->id,id);
         printf("first node in the network.\n");
     }else{
         //ask which node you want to connect
@@ -155,13 +160,15 @@ int join(int fd_udp, int fd_tcp, char net[], char id[], char ip[], char tcp[], s
                 valid = 0;
             }
         }while(valid != 0);
-
+ 
         new_fd = connecttonode(t_ip, t_port);
-
+        if(new_fd==-1){
+            return -1;
+        }
+        //set node info exter
+        strcpy(nodeinfo->ext->id,node);
         //send connection message
-        char msg[30];
-        sprintf(msg, "NEW %s %s %s", id, ip, tcp);
-        write(new_fd, msg ,30);
+        new_send(new_fd, id, ip, tcp);
     }
     return new_fd;
 }

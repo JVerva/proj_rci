@@ -62,9 +62,6 @@ int fillContact(Contact contact, char* id, char* ip, char* port){
     strcpy(contact->id, id);
     strcpy(contact->ip, ip);
     strcpy(contact->port, port);
-    //contact->id = strdup(id);
-    //contact->ip = strdup(ip);
-    //contact->port = strdup(port);
     return 0;
 }
 
@@ -83,7 +80,7 @@ void closeContacts(Contact head){
     Contact aux = head;
     Contact aux1 = head;
     while(aux!=NULL){
-        close(aux->fd);//porque close do fd?|||||||||||||||||||||||
+        close(aux->fd);
         aux1 = aux;
         aux = aux->next;
         free(aux1);

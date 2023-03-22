@@ -2,12 +2,10 @@
 
 const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTENT"}; 
 
-struct node_info* initNode_info(char id[]){
+struct node_info* initNode_info(){
     struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
     temp->ext = createContact();//must be closed|||||||||||||||
-    strcpy(temp->ext->id, id);
     temp->bck = createContact();
-    strcpy(temp->bck->id, id);
     return temp;
 }
 
@@ -132,5 +130,12 @@ int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], ch
 int promoteEXT(struct node_info* node, Contact promotee){
     fillContact(node->ext, promotee->id, promotee->ip, promotee->port);
     removeContact(node->intr, promotee);
+    return 0;
+}
+
+int new_send(int fd, char id[], char ip[], char tcp[]){
+    char msg[30];
+    sprintf(msg, "NEW %s %s %s", id, ip, tcp);//verificar se funcionou||||||||||||||
+    write(fd, msg ,30);
     return 0;
 }

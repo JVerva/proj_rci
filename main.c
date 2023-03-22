@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include "node_protocols.h"
 #include "cmds.h"
 #include "utils.h"
 
@@ -50,7 +49,7 @@ int main(int argc, char* argv[]){
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
 
     //Node information
-    struct node_info *node_info;
+    struct node_info *node_info = initNode_info();
 
     //file descriptor set
     fd_set rfds, aux_rfds;
@@ -91,24 +90,27 @@ int main(int argc, char* argv[]){
                 switch(cmd){
                     case -1:
                         //error on commands (skip)
-                        break;
+                    break;
                     case 0:
                         //join
                         if(joined == 0){
                             id = strdup(args[1]);
                             net = strdup(args[0]);
-                            join(fd_udp,fd_tcp, net, id, ip, port, *node_server);
-                            //Snode_info = initNode_info(id);
+                            join(fd_udp,fd_tcp, node_info, net, id, ip, port, *node_server);
                             joined = 1;
                         }else{
                             fprintf(stderr,"already joined the network as node %s.\n", id);
                         }
-                        break;
+                    break;
                     case 1:
                         //djoin
                         djoin(fd_udp,fd_tcp, args[0], args[1], args[2], args[3], args[4], *node_server);
                         node_info = initNode_info(id);
-                        break;
+                    break;
+                    case 6:
+                        //show topology
+                        show_topology(node_info);
+                    break;
                     case 9:
                         //leave
                         if(joined == 0){
@@ -116,19 +118,20 @@ int main(int argc, char* argv[]){
                         }else{
                             leave(fd_udp, net, atoi(id), *node_server);
                             //reset variables
-                            closeNode_info(node_info);
+                            closeNode_info(node_info);//o LEAVE DEVE REINICIAR O NODE_INFO|||||||||||||||||||||||
                             joined = 0;
                         }
-                        break;
+                    break;
                     case 10:
                         //exit
-                        closeContacts(contact_head);
+                        //closeNode_info(node_info);//LEAVE TBM FAZ ISTO|||||||||||||||||
+                        //closeContacts(contact_head);
                         close(fd_tcp);
                         close(fd_udp);
                         return 0;
                     default:
                         fprintf(stderr, "command not yet implemented.\n");
-                        break;
+                    break;
                 }
                 free(args);
             }
@@ -162,10 +165,14 @@ int main(int argc, char* argv[]){
                     switch(msg){
                         case 0:
                             //new
-                            if(fillContact(contact_aux, args[0], args[1], args[2])==0){
-                                printf("added new contact, %s.\n", args[0]);
-                            }else{
-                                fprintf(stderr, "failed to add new contact.\n");
+                            if(new_rcv(node_info, contact_aux, args[0], args[1], args[2])!=0){
+                                fprintf(stderr, "error recieving new msg.\n");
+                            }
+                        break;
+                        case 1:
+                            //extern
+                            if(extern_rcv(node_info, contact_aux->id, args[0], args[1], args[2])!=0){
+                                fprintf(stderr, "error recieving extern msg.\n");
                             }
                         break;
                         case -1:
