@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include "contact.h"
 #include "node_protocols.h"
 #include "cmds.h"
 #include "utils.h"
@@ -98,7 +97,7 @@ int main(int argc, char* argv[]){
                         if(joined == 0){
                             id = strdup(args[1]);
                             net = strdup(args[0]);
-                            join(fd_udp,fd_tcp, net, id, ip, port, *node_server)
+                            join(fd_udp,fd_tcp, net, id, ip, port, *node_server);
                             //Snode_info = initNode_info(id);
                             joined = 1;
                         }else{

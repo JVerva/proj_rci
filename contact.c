@@ -13,7 +13,7 @@ Contact addContact(Contact head, char* id, int fd){
     Contact temp, p;// declare two Contacts temp and p
     temp = createContact();//createContact will return a new Contact with data = value and next pointing to NULL.
     //set variables
-    temp->id = strdup(id);
+    strcpy(temp->id,id);
     temp->fd = fd;
     if(head == NULL){
         head = temp;     //when linked list is empty
@@ -44,7 +44,8 @@ Contact removeContact(Contact head, Contact deprecated){//can be changed as to b
             }else{
                 back->next = front->next;
             }
-            close(deprecated);
+            close(deprecated->fd);
+            free(deprecated);
             break;
         }
         back = front;

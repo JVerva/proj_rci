@@ -8,8 +8,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include "utils.h"
 #include "node_protocols.h"
+#include "utils.h"
 
 #define YEL "\x1b[33m"
 #define WHI "\x1b[37m"

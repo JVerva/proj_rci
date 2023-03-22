@@ -125,12 +125,12 @@ int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], ch
     }else{
         //send EXTERN message
     }
-
+    return 0;
 }
 
 
 int promoteEXT(struct node_info* node, Contact promotee){
     fillContact(node->ext, promotee->id, promotee->ip, promotee->port);
-    removeContact(node, promotee);
+    removeContact(node->intr, promotee);
     return 0;
 }
