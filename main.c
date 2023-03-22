@@ -153,7 +153,7 @@ int main(int argc, char* argv[]){
                     if(n == -1){
                         fprintf(stderr, "read error.\n");
                     }
-                    char **args = (char**)malloc(3*sizeof(char**));
+                    char **args = (char**)malloc(6*sizeof(char**));
                     int msg = messagecheck(buffer, args);
                     switch(msg){
                         case 0:
@@ -168,6 +168,10 @@ int main(int argc, char* argv[]){
                             //error
                             fprintf(stderr, "error: message does not correspond to node protocol.\n");
                         break;
+                        default:
+                            fprintf(stderr, "error: command not yet implemented.\n");
+                        break;
+
                     }
                     free(args);
                 }

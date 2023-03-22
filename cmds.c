@@ -18,7 +18,7 @@ int commandcheck(char buffer[], char** args){
     //loop through the string to extract all other tokens
     for(int i=0; token != NULL; i++ ) {
         token = strtok(NULL, " \n");
-        if(i>6){
+        if(i>5){
             fprintf(stderr,"too many arguments.\n");
             return -1;
         }
