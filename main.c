@@ -14,6 +14,7 @@
 int inittcpsocket(char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
 int checkfornode(char[], char[]);
+int handleconnection(struct node_info* node_info, Contact contact,fd_set* aux_rfds);
 
 char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]){
     //number of ready file descriptors
     int counter;
     char buffer[128];
-
+    memset(buffer, 0, 128);
     //reset file descriptor set
     FD_ZERO(&rfds);
     //add keyboard to file descriptor set
@@ -153,41 +154,15 @@ int main(int argc, char* argv[]){
             }
             //any neighbor ready
             contact_aux = node_info->intr;
-            //falta ouvir o EXT (e BCK talvez)|||||||||||||||||||
+            //check extern node
+            if(strcmp(node_info->ext->id, "-1")!=0){
+                handleconnection(node_info, node_info->ext, &aux_rfds);
+            }
+            //check intern nodes
             while(contact_aux != NULL){
                 contact_temp = contact_aux;
                 contact_aux = contact_aux->next;
-                if(FD_ISSET(contact_temp->fd, &aux_rfds)){
-                    n = read(contact_temp->fd,buffer,128);
-                    if(n == -1){
-                        fprintf(stderr, "read error.\n");
-                    }
-                    char **args = (char**)malloc(6*sizeof(char**));
-                    int msg = messagecheck(buffer, args);
-                    switch(msg){
-                        case 0:
-                            //new
-                            if(new_rcv(node_info, contact_temp, args[0], args[1], args[2])!=0){
-                                fprintf(stderr, "error recieving new msg.\n");
-                            }
-                        break;
-                        case 1:
-                            //extern
-                            if(extern_rcv(node_info, contact_temp->id, args[0], args[1], args[2])!=0){
-                                fprintf(stderr, "error recieving extern msg.\n");
-                            }
-                        break;
-                        case -1:
-                            //error
-                            fprintf(stderr, "error: message does not correspond to node protocol.\n");
-                        break;
-                        default:
-                            fprintf(stderr, "error: command not yet implemented.\n");
-                        break;
-
-                    }
-                    free(args);
-                }
+                handleconnection(node_info, contact_temp, &aux_rfds);
             }
             memset(buffer,0,sizeof(buffer));
         }
@@ -248,3 +223,43 @@ int initudpsocket(char ip[], char port[], struct addrinfo **res){
 
     return sockfd;
 }
+
+int handleconnection(struct node_info* node_info, Contact contact,fd_set* aux_rfds){
+    char buffer[128];
+    memset(buffer,0,128);
+    if(FD_ISSET(contact->fd, aux_rfds)){
+        int n = read(contact->fd,buffer,128);
+        if(n == -1){
+            fprintf(stderr, "read error.\n");
+        }
+        char **args = (char**)malloc(6*sizeof(char**));
+        int msg = messagecheck(buffer, args);
+        switch(msg){
+            case 0:
+                //new
+                if(new_rcv(node_info, contact, args[0], args[1], args[2])!=0){
+                    fprintf(stderr, "error recieving new msg.\n");
+                }
+            break;
+            case 1:
+                //extern
+                if(extern_rcv(node_info, contact->id, args[0], args[1], args[2])!=0){
+                    fprintf(stderr, "error recieving extern msg.\n");
+                }
+            break;
+            case -1:
+                //error
+                fprintf(stderr, "error: message does not correspond to node protocol.\n");
+                return -1;
+            break;
+            default:
+                fprintf(stderr, "error: command not yet implemented.\n");
+                return -1;
+            break;
+
+        }
+        free(args);
+    }
+    return 0;
+}
+

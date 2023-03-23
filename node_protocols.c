@@ -6,14 +6,18 @@ struct node_info* initNode_info(){
     struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
     temp->intr = NULL;
     temp->ext = createContact();//must be closed|||||||||||||||
+    strcpy(temp->ext->id, "-1");
     temp->bck = createContact();
+    strcpy(temp->bck->id, "-1");
     return temp;
 }
 
 void closeNode_info(struct node_info *node){
+    close(node->ext->fd);
     free(node->ext);
+    close(node->bck->fd);
     free(node->bck);
-    closeContacts(node->intr);
+    freeContacts(node->intr);
     free(node);
 }
 
@@ -123,7 +127,7 @@ int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[]
     //else its a new internal neighbor
     }else{
     }
-    extern_send(nodeinfo, nodeinfo->ext->fd);
+    extern_send(nodeinfo, sender->fd);
     return 0;
 }
 
@@ -136,17 +140,17 @@ int promoteEXT(struct node_info* node, Contact promotee){
 }
 
 int new_send(int fd, char id[], char ip[], char tcp[]){
-    char msg[44];
-    memset(msg, 0, 44);
-    sprintf(msg, "NEW %s %s %s", id, ip, tcp);//verificar se funcionou||||||||||||||
+    char msg[45];
+    memset(msg, 0, 45);
+    sprintf(msg, "NEW %s %s %s\n", id, ip, tcp);//verificar se funcionou||||||||||||||
     write(fd, msg ,44);
     return 0;
 }
 
 int extern_send(struct node_info* nodeinfo, int fd){
-    char msg[44];
-    memset(msg,0,44);
-    sprintf(msg, "EXTERN %s %s %s", nodeinfo->ext->id, nodeinfo->ext->ip, nodeinfo->ext->port);
+    char msg[45];
+    memset(msg,0,45);
+    sprintf(msg, "EXTERN %s %s %s\n", nodeinfo->ext->id, nodeinfo->ext->ip, nodeinfo->ext->port);
     write(fd, msg ,44);
     return 0;
 }

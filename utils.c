@@ -6,7 +6,7 @@ int verifynet(char* net){
         return 1;
     }else{
         for(int i = 0; i < 3; i++){
-            if(!(net[i]<57 && net[i]>47)){
+            if(!(net[i]<58 && net[i]>47)){
                 return 1;
             }
         }
