@@ -43,10 +43,10 @@ int main(int argc, char* argv[]){
 
     struct addrinfo* node_server = (struct addrinfo*)malloc(sizeof(struct addrinfo*));
 
-    //init tcp socket
-    int fd_tcp = inittcpsocket(port);
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
+    //tcp file descriptor variable
+    int fd_tcp;
 
     //Node information
     struct node_info *node_info = initNode_info();
@@ -61,8 +61,6 @@ int main(int argc, char* argv[]){
     FD_ZERO(&rfds);
     //add keyboard to file descriptor set
     FD_SET(0, &rfds);
-    //add tcp socket to file descriptor set
-    FD_SET(fd_tcp, &rfds);
 
     //program loop
     while(1){
@@ -94,6 +92,10 @@ int main(int argc, char* argv[]){
                     case 0:
                         //join
                         if(joined == 0){
+                            //init tcp socket
+                            fd_tcp = inittcpsocket(port);
+                            //add tcp socket to file descriptor set
+                            FD_SET(fd_tcp, &rfds);
                             id = strdup(args[1]);
                             net = strdup(args[0]);
                             join(fd_udp,fd_tcp, node_info, net, id, ip, port, *node_server);
@@ -116,17 +118,16 @@ int main(int argc, char* argv[]){
                         if(joined == 0){
                             fprintf(stderr,"node not registered.\n");
                         }else{
-                            leave(fd_udp, net, atoi(id), *node_server);
-                            //reset variables
-                            closeNode_info(node_info);//o LEAVE DEVE REINICIAR O NODE_INFO|||||||||||||||||||||||
+                            FD_CLR(fd_tcp, &rfds);
+                            FD_CLR(node_info->bck->fd, &rfds);
+                            FD_CLR(node_info->ext->fd, &rfds);
+                            leave(fd_udp, fd_tcp, net, id, *node_server);
+                            closeNode_info(node_info);
                             joined = 0;
                         }
                     break;
                     case 10:
                         //exit
-                        //closeNode_info(node_info);//LEAVE TBM FAZ ISTO|||||||||||||||||
-                        //closeContacts(node_info->intr);
-                        close(fd_tcp);
                         close(fd_udp);
                         return 0;
                     default:
@@ -153,45 +154,51 @@ int main(int argc, char* argv[]){
             }
             //any neighbor ready
             contact_aux = node_info->intr;
+            int flags = 0;
             //falta ouvir o EXT (e BCK talvez)|||||||||||||||||||
             while(contact_aux != NULL){
                 contact_temp = contact_aux;
                 contact_aux = contact_aux->next;
                 if(FD_ISSET(contact_temp->fd, &aux_rfds)){
-                    n = read(contact_temp->fd,buffer,128);
+                    n = recv(contact_temp->fd,buffer,128,flags);
                     if(n == -1){
                         fprintf(stderr, "read error.\n");
-                    }
-                    char **args = (char**)malloc(6*sizeof(char**));
-                    int msg = messagecheck(buffer, args);
-                    switch(msg){
-                        case 0:
-                            //new
-                            if(new_rcv(node_info, contact_temp, args[0], args[1], args[2])!=0){
-                                fprintf(stderr, "error recieving new msg.\n");
-                            }
-                        break;
-                        case 1:
-                            //extern
-                            if(extern_rcv(node_info, contact_temp->id, args[0], args[1], args[2])!=0){
-                                fprintf(stderr, "error recieving extern msg.\n");
-                            }
-                        break;
-                        case -1:
-                            //error
-                            fprintf(stderr, "error: message does not correspond to node protocol.\n");
-                        break;
-                        default:
-                            fprintf(stderr, "error: command not yet implemented.\n");
-                        break;
+                    }else if(n==0){
+                        //contacts socket is closed
+                        printf("connection %s closed.\n", contact_temp->id);
+                        FD_CLR(contact_temp->fd,&rfds);
+                        removeContact(node_info->intr, contact_temp);
+                    }else{
+                        char **args = (char**)malloc(6*sizeof(char**));
+                        int msg = messagecheck(buffer, args);
+                        switch(msg){
+                            case 0:
+                                //new
+                                if(new_rcv(node_info, contact_temp, args[0], args[1], args[2])!=0){
+                                    fprintf(stderr, "error recieving new msg.\n");
+                                }
+                            break;
+                            case 1:
+                                //extern
+                                if(extern_rcv(node_info, contact_temp->id, args[0], args[1], args[2])!=0){
+                                    fprintf(stderr, "error recieving extern msg.\n");
+                                }
+                            break;
+                            case -1:
+                                //error
+                                fprintf(stderr, "error: message does not correspond to node protocol.\n");
+                            break;
+                            default:
+                                fprintf(stderr, "error: command not yet implemented.\n");
+                            break;
 
+                        }
+                        free(args);
                     }
-                    free(args);
                 }
             }
             memset(buffer,0,sizeof(buffer));
         }
-
     }
     return 0;
 }

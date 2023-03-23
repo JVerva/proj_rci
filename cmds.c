@@ -129,7 +129,7 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
         printf("%s was already in the network, using id %s instead.\n", og_id, id);
     }
     //create node in the network
-    if(createnode(fd_udp, serverinfo, net, id, ip, tcp)!=0){
+    if(registernode(fd_udp, serverinfo, net, id, ip, tcp)!=0){
         return -1;
     }
     //set node info id
@@ -192,7 +192,7 @@ int djoin(int fd_udp,int fd_tcp, char net[], char id[], char bootid[], char ip[]
     }
     int new_fd;
     //create node in the network
-    if(createnode(fd_udp, serverinfo, net, id, ip, tcp)!=0){
+    if(registernode(fd_udp, serverinfo, net, id, ip, tcp)!=0){
         return -1;
     }
     printf("node inserted.\n");
@@ -221,32 +221,13 @@ int djoin(int fd_udp,int fd_tcp, char net[], char id[], char bootid[], char ip[]
 }
 
 //unregisters node from network
-int leave(int udp, char net[], int id, struct addrinfo serverinfo){
-    //send leave command
-    char buff[256];
-    memset(buff,0,256);
-    char cmd[13];
-    char ok_unreg[] = "OKUNREG";
-    sprintf(cmd, "UNREG %s %.2d", net, id);
-
-
-    int n = sendto(udp, cmd, 12, 0, serverinfo.ai_addr, serverinfo.ai_addrlen);
-    if(n == -1){
-        fprintf(stderr, "sendto error.\n");
+int leave(int udp, int tcp, char net[], char id[], struct addrinfo serverinfo){
+    //unregisters node in network
+    if(unregisternode(udp, serverinfo, net, id)!=0){
         return -1;
     }
-
-    //receive server response
-    n = recvfrom(udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
-    if(n == -1){
-        fprintf(stderr, "recvfrom error.\n");
-        return -1;
-    }
-    if (strcmp(ok_unreg, buff)!=0){
-        fprintf(stderr, "leave command not successful\n");
-        return -1;
-    }
-    printf("node left.\n");
+    //close socket
+    close(tcp);
     return 0;
 }
 

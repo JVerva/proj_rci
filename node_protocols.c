@@ -11,8 +11,8 @@ struct node_info* initNode_info(){
 }
 
 void closeNode_info(struct node_info *node){
-    free(node->ext);
-    free(node->bck);
+    removeContact(node->bck,node->bck);
+    removeContact(node->ext,node->ext);
     closeContacts(node->intr);
     free(node);
 }

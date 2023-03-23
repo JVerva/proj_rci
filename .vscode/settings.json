@@ -1,6 +1,7 @@
 {
     "C_Cpp.errorSquiggles": "enabled",
     "files.associations": {
-        "contact.h": "c"
+        "contact.h": "c",
+        "utils.h": "c"
     }
 }

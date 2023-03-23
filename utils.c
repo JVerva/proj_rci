@@ -136,7 +136,7 @@ int getnodelist(int fd_udp,struct addrinfo serverinfo, char* net, char node_list
 }
 
 //creates node in network
-int createnode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char* ip, char* tcp){
+int registernode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char* ip, char* tcp){
     char cmd[30];
     char buff[256];
     memset(buff,0,256);
@@ -156,5 +156,31 @@ int createnode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char*
     if(strcmp(buff, "OKREG")!=0){
         return -1;
     }
+    return 0;
+}
+
+int unregisternode(int fd_udp,struct addrinfo serverinfo, char* net, char* id){
+    char cmd[30];
+    char buff[256];
+    memset(buff,0,256);
+    memset(cmd,0,30);
+    sprintf(cmd, "UNREG %s %s", net, id);
+    int n = sendto(fd_udp, cmd, 12, 0, serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "sendto error.\n");
+        return -1;
+    }
+
+    //receive server response
+    n = recvfrom(fd_udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "recvfrom error.\n");
+        return -1;
+    }
+    if (strcmp("OKUNREG", buff)!=0){
+        fprintf(stderr, "leave command not successful %s\n", buff);
+        return -1;
+    }
+    printf("node left.\n");
     return 0;
 }

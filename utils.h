@@ -14,5 +14,7 @@ int getnodeinfo(char node_id[], char node_list[], char ip[], char port[]);
 int connecttonode(char *t_ip, char *t_port);
 //gets nodelist from network
 int getnodelist(int fd_udp,struct addrinfo serverinfo, char* net, char node_list[]);
-//creates node in network
-int createnode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char* ip, char* tcp);
+//registers node in network
+int registernode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char* ip, char* tcp);
+//unregisters node in network
+int unregisternode(int fd_udp,struct addrinfo serverinfo, char* net, char* id);
