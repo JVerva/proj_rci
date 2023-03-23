@@ -4,6 +4,7 @@ const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTEN
 
 struct node_info* initNode_info(){
     struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
+    temp->intr = NULL;
     temp->ext = createContact();//must be closed|||||||||||||||
     temp->bck = createContact();
     return temp;
@@ -109,7 +110,7 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
     return 0;
 }
 
-int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], char port[]){
+int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[], char port[]){
     //INPUT ERROR CHECK||||||||||||||||||
     
     //unknown contact
@@ -117,25 +118,35 @@ int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], ch
         fillContact(sender, id_rcv, ip, port);
     }
     //if node is alone, incoming node becomes its ext
-    if(strcmp(node->id, node->ext->id) == 0){
-        promoteEXT(node, sender);
+    if(strcmp(nodeinfo->id, nodeinfo->ext->id) == 0){
+        promoteEXT(nodeinfo, sender);
     //else its a new internal neighbor
     }else{
-        //send EXTERN message
     }
+    extern_send(nodeinfo, nodeinfo->ext->fd);
     return 0;
 }
 
-
 int promoteEXT(struct node_info* node, Contact promotee){
     fillContact(node->ext, promotee->id, promotee->ip, promotee->port);
-    removeContact(node->intr, promotee);
+    node->ext->fd = promotee->fd;
+    promotee->fd = -1;
+    node->intr = removeContact(node->intr, promotee);
     return 0;
 }
 
 int new_send(int fd, char id[], char ip[], char tcp[]){
-    char msg[30];
+    char msg[44];
+    memset(msg, 0, 44);
     sprintf(msg, "NEW %s %s %s", id, ip, tcp);//verificar se funcionou||||||||||||||
-    write(fd, msg ,30);
+    write(fd, msg ,44);
+    return 0;
+}
+
+int extern_send(struct node_info* nodeinfo, int fd){
+    char msg[44];
+    memset(msg,0,44);
+    sprintf(msg, "EXTERN %s %s %s", nodeinfo->ext->id, nodeinfo->ext->ip, nodeinfo->ext->port);
+    write(fd, msg ,44);
     return 0;
 }

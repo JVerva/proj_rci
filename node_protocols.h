@@ -32,5 +32,8 @@ int extern_rcv(struct node_info *node, char id_sender[], char id_rcv[], char ip[
 //promote internal neighbor to ext
 int promoteEXT(struct node_info* node, Contact promotee);
 
+//send exter msg
+int extern_send(struct node_info* nodeinfo, int fd);
+
 //sends new msg
 int new_send(int fd, char id[], char ip[], char tcp[]);

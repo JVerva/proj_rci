@@ -23,8 +23,8 @@ int main(int argc, char* argv[]){
     char *id = {"-1"};
     char *reg_ip = (char*)malloc(sizeof(char*));
     char *reg_port = (char*)malloc(sizeof(char*));
-    Contact contact_head=NULL;
     Contact contact_aux=NULL;
+    Contact contact_temp = NULL;
     int joined = 0;
     //get arguments
     if(argc != 5 && argc != 3){
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]){
         counter = select(fd_tcp+10, &aux_rfds, NULL, NULL, NULL);
 
         if(counter<=0){
-            fprintf(stderr, "select error: %d.\n", counter);
+            perror("select error");
             exit(1);
         }
         else{
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]){
                     case 10:
                         //exit
                         //closeNode_info(node_info);//LEAVE TBM FAZ ISTO|||||||||||||||||
-                        //closeContacts(contact_head);
+                        //closeContacts(node_info->intr);
                         close(fd_tcp);
                         close(fd_udp);
                         return 0;
@@ -148,15 +148,17 @@ int main(int argc, char* argv[]){
                     //add file descriptor to select checks
                     FD_SET(new_fd, &rfds);
                     //create new contact with default data (to be filled later)
-                    contact_head = addContact(contact_head, "-1", new_fd);
+                    node_info->intr = addContact(node_info->intr, "-1", new_fd);
                 }
             }
             //any neighbor ready
-            contact_aux = contact_head;
-            
+            contact_aux = node_info->intr;
+            //falta ouvir o EXT (e BCK talvez)|||||||||||||||||||
             while(contact_aux != NULL){
-                if(FD_ISSET(contact_aux->fd, &aux_rfds)){
-                    n = read(contact_aux->fd,buffer,128);
+                contact_temp = contact_aux;
+                contact_aux = contact_aux->next;
+                if(FD_ISSET(contact_temp->fd, &aux_rfds)){
+                    n = read(contact_temp->fd,buffer,128);
                     if(n == -1){
                         fprintf(stderr, "read error.\n");
                     }
@@ -165,13 +167,13 @@ int main(int argc, char* argv[]){
                     switch(msg){
                         case 0:
                             //new
-                            if(new_rcv(node_info, contact_aux, args[0], args[1], args[2])!=0){
+                            if(new_rcv(node_info, contact_temp, args[0], args[1], args[2])!=0){
                                 fprintf(stderr, "error recieving new msg.\n");
                             }
                         break;
                         case 1:
                             //extern
-                            if(extern_rcv(node_info, contact_aux->id, args[0], args[1], args[2])!=0){
+                            if(extern_rcv(node_info, contact_temp->id, args[0], args[1], args[2])!=0){
                                 fprintf(stderr, "error recieving extern msg.\n");
                             }
                         break;
@@ -186,7 +188,6 @@ int main(int argc, char* argv[]){
                     }
                     free(args);
                 }
-                contact_aux = contact_aux->next;
             }
             memset(buffer,0,sizeof(buffer));
         }

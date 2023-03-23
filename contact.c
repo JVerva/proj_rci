@@ -44,7 +44,9 @@ Contact removeContact(Contact head, Contact deprecated){//can be changed as to b
             }else{
                 back->next = front->next;
             }
-            close(deprecated->fd);
+            if(deprecated->fd != -1){
+                close(deprecated->fd);
+            }
             free(deprecated);
             break;
         }
