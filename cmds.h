@@ -19,6 +19,6 @@
 
 int commandcheck(char[], char*[]);
 int join(int, int, struct node_info*, char[] , char[], char[], char[], struct addrinfo);
-int djoin(int, int, char[] , char[], char[], char[],char[], struct addrinfo);
+int djoin(int, struct node_info*, char[] , char[], char[], char[],char[], struct addrinfo);
 int leave(int, int, char[], char[], struct addrinfo);
 int show_topology(struct node_info* node);

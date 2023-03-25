@@ -7,6 +7,7 @@ struct node_info* initNode_info(){
     temp->intr = NULL;
     temp->ext = createContact();//must be closed|||||||||||||||
     temp->bck = createContact();
+    temp->rout_table = NULL;
     return temp;
 }
 

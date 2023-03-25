@@ -20,7 +20,7 @@ int verifyid(char* id){
         return 1;
     }else{
         for(int i = 0; i < 2; i++){
-            if(!(id[i]<57 && id[i]>47)){
+            if(!(id[i]<58 && id[i]>47)){
                 return 1;
             }
         }
@@ -102,6 +102,7 @@ int connecttonode(char *t_ip, char *t_port){
     int n=getaddrinfo(t_ip, t_port ,&hints, &res);
     if(n!=0){
         printf("error getting node address %d.\n",n);
+        freeaddrinfo(res);
         return -1;
     }
     
@@ -110,10 +111,13 @@ int connecttonode(char *t_ip, char *t_port){
     n=connect(fd_tcp,res->ai_addr,res->ai_addrlen);
     if(n==-1){
         perror("error connecting to node");
+        freeaddrinfo(res);
         return -1;
     }
 
     printf("connected to node sucessfully.\n");
+
+    freeaddrinfo(res);
 
     return fd_tcp;
 }

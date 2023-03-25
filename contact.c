@@ -4,6 +4,10 @@
 Contact createContact(){
     Contact temp; // declare a Contact
     temp = (Contact)malloc(sizeof(struct contact)); // allocate memory using malloc()
+    strcpy(temp->id, "-1");
+    strcpy(temp->port, "-1");
+    strcpy(temp->ip, "-1");
+    temp->fd = -1;
     temp->next = NULL;// make next point to NULL
     return temp;//return the new Contact
 }
