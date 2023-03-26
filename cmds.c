@@ -137,10 +137,12 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
 
     printf("node inserted.\n");
     //default node info
+    nodeinfo->bck = createContact();
     strcpy(nodeinfo->bck->id,id);
     //check if there are any other nodes in the network
     if(isnetworkempty(node_list)==0){
         //set node info extern
+        nodeinfo->ext = createContact(); 
         strcpy(nodeinfo->ext->id,id);
         printf("first node in the network.\n");
     }else{
@@ -149,7 +151,7 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
         char t_ip[20], t_port[6];
         memset(t_ip,0,20);
         memset(t_port,0,6);
-        printf("which node do you wish to connect to?\n %s\n", node_list);
+        printf("which node do you wish to connect to?\n %s", node_list);
         int valid = 1;
         do{
             scanf("%s", node);
@@ -171,11 +173,12 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
             return -1;
         }
         //set node info extern
+        nodeinfo->ext = createContact();
         fillContact(nodeinfo->ext,node, t_ip,t_port);
         //send connection message
         new_send(new_fd, id, ip, tcp);
     }
-    return new_fd;
+    return 0;
 }
 
 //joins node to network.
@@ -212,17 +215,27 @@ int djoin(int fd_tcp, struct node_info* node_info, char net[], char id[], char b
         sscanf(msg, "NEW %s %s %s", id, ip, tcp);
         write(new_fd, msg ,30);
     }
-    return new_fd;
+    return 0;
 }
 
 //unregisters node from network
-int leave(int udp, int tcp, char net[], char id[], struct addrinfo serverinfo){
+int leave(int udp, int tcp, char net[], char id[],struct node_info** node_info,  struct addrinfo serverinfo, fd_set* rfds){
     //unregisters node in network
     if(unregisternode(udp, serverinfo, net, id)!=0){
         return -1;
     }
-    //close socket
+    //clear sockets from select
+    FD_CLR((*node_info)->ext->fd, rfds);
+    FD_CLR(tcp, rfds);
+    for(Contact aux = (*node_info)->intr; aux != NULL; aux = aux->next){
+        FD_CLR(aux->fd, rfds);
+    }
+    //close all opened sockets exept udp
+    //reset node info
+    closeNode_info(*node_info);
+    *node_info = initNode_info();
     close(tcp);
+
     return 0;
 }
 

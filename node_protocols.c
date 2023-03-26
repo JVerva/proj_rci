@@ -4,9 +4,10 @@ const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTEN
 
 struct node_info* initNode_info(){
     struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
+    strcpy(temp->id, "-1");
     temp->intr = NULL;
-    temp->ext = createContact();//must be closed|||||||||||||||
-    temp->bck = createContact();
+    temp->ext = NULL;//must be closed|||||||||||||||
+    temp->bck = NULL;
     temp->rout_table = NULL;
     return temp;
 }
@@ -124,7 +125,7 @@ int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[]
     //else its a new internal neighbor
     }else{
     }
-    extern_send(nodeinfo, nodeinfo->ext->fd);
+    extern_send(nodeinfo, sender->fd);
     return 0;
 }
 

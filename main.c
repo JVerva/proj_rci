@@ -102,9 +102,10 @@ int main(int argc, char* argv[]){
                             FD_SET(fd_tcp, &rfds);
                             strcpy(id, args[1]);
                             strcpy(net, args[0]);
-                            printf("%s\n", id);
                             if(join(fd_udp,fd_tcp, node_info, net, id, ip, port, *node_server)==0){
                                 joined = 1;
+                            }else{
+                                FD_CLR(fd_tcp, &rfds);
                             }
                         }
                         else{
@@ -112,10 +113,18 @@ int main(int argc, char* argv[]){
                         }
                     break;
                     case 1:
-                        //init tcp socket
-                        fd_tcp = inittcpsocket(port);
-                        //djoin
-                        djoin(fd_udp,node_info, args[0], args[1], args[2], args[3], args[4], *node_server);
+                        if(joined == 0){
+                            //init tcp socket
+                            fd_tcp = inittcpsocket(port);
+                            //djoin
+                            if(djoin(fd_udp,node_info, args[0], args[1], args[2], args[3], args[4], *node_server)==0){
+                                joined = 1;
+                            }else{
+                                FD_CLR(fd_tcp, &rfds);
+                            }
+                        }else{
+                            fprintf(stderr,"already joined the network as node %s.\n", id);
+                        }
                     break;
                     case 6:
                         //show topology
@@ -127,10 +136,8 @@ int main(int argc, char* argv[]){
                             fprintf(stderr,"node not registered.\n");
                         }else{
                             FD_CLR(fd_tcp, &rfds);
-                            FD_CLR(node_info->bck->fd, &rfds);
                             FD_CLR(node_info->ext->fd, &rfds);
-                            leave(fd_udp, fd_tcp, net, id, *node_server);
-                            //closeNode_info(node_info);
+                            leave(fd_udp, fd_tcp, net, id, &node_info, *node_server, &rfds);
                             joined = 0;
                         }
                     break;
@@ -148,17 +155,19 @@ int main(int argc, char* argv[]){
                 }
                 free(args);
             }
-            //tcp socket ready
-            checknewconnection(fd_tcp, node_info, &aux_rfds, &rfds);
-            //any neighbor ready
-            //check exter node
-            handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
-            //check inter nodes
-            contact_aux = node_info->intr;
-            while(contact_aux != NULL){
-                contact_temp = contact_aux;
-                contact_aux = contact_aux->next;
-                handlecontact(contact_temp, node_info, &aux_rfds, &rfds);
+            if(joined == 1){
+                //tcp socket ready
+                checknewconnection(fd_tcp, node_info, &aux_rfds, &rfds);
+                //any neighbor ready
+                //check exter node
+                handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
+                //check inter nodes
+                contact_aux = node_info->intr;
+                while(contact_aux != NULL){
+                    contact_temp = contact_aux;
+                    contact_aux = contact_aux->next;
+                    handlecontact(contact_temp, node_info, &aux_rfds, &rfds);
+                }
             }
             memset(buffer,0,sizeof(buffer));
         }
@@ -238,7 +247,7 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
             FD_CLR(contact->fd,rfds);
             node_info->intr = removeContact(node_info->intr, contact);
         }else{
-            char **args = (char**)malloc(6*sizeof(char**));
+            char **args = (char**)malloc(6*sizeof(char*));
             int msg = messagecheck(buffer, args);
             switch(msg){
                 case 0:

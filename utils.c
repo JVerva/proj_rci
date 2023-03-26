@@ -97,8 +97,6 @@ int connecttonode(char *t_ip, char *t_port){
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
-    printf("%s, %s.\n", t_ip, t_port);
-
     int n=getaddrinfo(t_ip, t_port ,&hints, &res);
     if(n!=0){
         printf("error getting node address %d.\n",n);
@@ -141,12 +139,12 @@ int getnodelist(int fd_udp,struct addrinfo serverinfo, char* net, char node_list
 
 //creates node in network
 int registernode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char* ip, char* tcp){
-    char cmd[30];
-    char buff[256];
+    char cmd[30] = {"\0"};
+    char buff[256] = {"\0"};
     memset(buff,0,256);
     memset(cmd,0,30);
     sprintf(cmd, "REG %s %s %s %s", net, id, ip, tcp);
-    int n = sendto(fd_udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
+    int n = sendto(fd_udp, cmd , 29 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
         perror("sendto error");
         return -1;

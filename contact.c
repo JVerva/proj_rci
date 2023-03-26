@@ -49,6 +49,7 @@ Contact removeContact(Contact head, Contact deprecated){//can be changed as to b
                 back->next = front->next;
             }
             if(deprecated->fd != -1){
+                printf("closed %s.\n", deprecated->id);
                 close(deprecated->fd);
             }
             free(deprecated);
