@@ -87,7 +87,9 @@ void closeContacts(Contact head){
     Contact aux = head;
     Contact aux1 = head;
     while(aux!=NULL){
-        close(aux->fd);
+        if(aux->fd!=-1){
+            close(aux->fd);
+        }
         aux1 = aux;
         aux = aux->next;
         free(aux1);

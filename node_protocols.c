@@ -5,6 +5,8 @@ const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTEN
 struct node_info* initNode_info(){
     struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
     strcpy(temp->id, "-1");
+    strcpy(temp->ip, "-1");
+    strcpy(temp->port, "-1");
     temp->intr = NULL;
     temp->ext = NULL;//must be closed|||||||||||||||
     temp->bck = NULL;
@@ -121,19 +123,20 @@ int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[]
     }
     //if node is alone, incoming node becomes its ext
     if(strcmp(nodeinfo->id, nodeinfo->ext->id) == 0){
-        promoteEXT(nodeinfo, sender);
-    //else its a new internal neighbor
-    }else{
+        promoteEXT(nodeinfo);
     }
+
     extern_send(nodeinfo, sender->fd);
     return 0;
 }
 
-int promoteEXT(struct node_info* node, Contact promotee){
-    fillContact(node->ext, promotee->id, promotee->ip, promotee->port);
-    node->ext->fd = promotee->fd;
-    promotee->fd = -1;
-    node->intr = removeContact(node->intr, promotee);
+int promoteEXT(struct node_info* node){
+    node->ext = node->intr;
+    if(node->intr->next!=NULL){
+        node->intr = node->intr->next;
+    }else{
+        node->intr = NULL;
+    }
     return 0;
 }
 

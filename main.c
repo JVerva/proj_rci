@@ -159,7 +159,7 @@ int main(int argc, char* argv[]){
                 //tcp socket ready
                 checknewconnection(fd_tcp, node_info, &aux_rfds, &rfds);
                 //any neighbor ready
-                //check exter node
+                //check extern node
                 handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
                 //check inter nodes
                 contact_aux = node_info->intr;
@@ -237,15 +237,41 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
     if(FD_ISSET(contact->fd, aux_rfds)){
         int n = recv(contact->fd,buffer,128,flags);
         if(n == -1){
-            fprintf(stderr, "read error.\n");
-        }else if(n==0){
+            perror("read error");
+        }else if(n == 0){
             //contacts socket is closed
-            printf("connection %s closed.\n", contact->id);
-            //if it is extern contact, connect to backup (TO DO)
-
-            //if intern contact, remove from inter list
-            FD_CLR(contact->fd,rfds);
-            node_info->intr = removeContact(node_info->intr, contact);
+            //if it is extern contact, connect to backup
+            if(strcmp(node_info->ext->id,contact->id)==0){
+                FD_CLR(node_info->ext->fd, rfds);
+                node_info->ext = removeContact(node_info->ext, contact);
+                //if back up is myself, choose another intern node to be extern
+                if(strcmp(node_info->bck->id, node_info->id)==0){
+                    //check if there are intern neighbors
+                    if(node_info->intr==NULL){
+                        node_info->ext = createContact();
+                        fillContact(node_info->ext, node_info->id, node_info->port, node_info->port);
+                    }else{
+                        promoteEXT(node_info);
+                    }
+                }else{
+                    int new_fd = connecttonode(node_info->bck->ip, node_info->bck->port);
+                    if(new_fd==-1){
+                        fprintf(stderr, "failed to connect to back up.\n");
+                        return -1;
+                    }
+                    FD_SET(new_fd, rfds);
+                    fillContact(node_info->ext, node_info->bck->id, node_info->bck->ip, node_info->bck->port);         
+                    new_send(new_fd, node_info->id, node_info->ip, node_info->port);
+                }
+                //send extern message to all intern nodes
+                for(Contact aux = node_info->intr; aux != NULL; aux = aux->next){
+                    extern_send(node_info, aux->fd);
+                }
+            }else{
+                //if intern contact, remove from intern list
+                FD_CLR(contact->fd,rfds);
+                node_info->intr = removeContact(node_info->intr, contact);
+            }
         }else{
             char **args = (char**)malloc(6*sizeof(char*));
             int msg = messagecheck(buffer, args);

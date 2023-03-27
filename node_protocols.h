@@ -6,6 +6,8 @@
 
 struct node_info{
     char id[3];
+    char ip[18];
+    char port[7];
     Contact ext;
     Contact bck;
     Contact intr;
@@ -30,7 +32,7 @@ int new_rcv(struct node_info* node, Contact sender, char id_rcv[], char ip[], ch
 int extern_rcv(struct node_info *node, char id_sender[], char id_rcv[], char ip[], char port[]);
 
 //promote internal neighbor to ext
-int promoteEXT(struct node_info* node, Contact promotee);
+int promoteEXT(struct node_info* node);
 
 //send exter msg
 int extern_send(struct node_info* nodeinfo, int fd);

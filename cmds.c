@@ -134,6 +134,8 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
     }
     //set node info id
     strcpy(nodeinfo->id,id);
+    strcpy(nodeinfo->ip, ip);
+    strcpy(nodeinfo->port, tcp);
 
     printf("node inserted.\n");
     //default node info
@@ -144,6 +146,8 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
         //set node info extern
         nodeinfo->ext = createContact(); 
         strcpy(nodeinfo->ext->id,id);
+        strcpy(nodeinfo->ext->ip,ip);
+        strcpy(nodeinfo->ext->port,tcp);
         printf("first node in the network.\n");
     }else{
         //ask which node you want to connect
@@ -174,6 +178,7 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
         }
         //set node info extern
         nodeinfo->ext = createContact();
+        nodeinfo->ext->fd = new_fd;
         fillContact(nodeinfo->ext,node, t_ip,t_port);
         //send connection message
         new_send(new_fd, id, ip, tcp);
