@@ -244,14 +244,17 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
             if(strcmp(node_info->ext->id,contact->id)==0){
                 FD_CLR(node_info->ext->fd, rfds);
                 node_info->ext = removeContact(node_info->ext, contact);
-                //if back up is myself, choose another intern node to be extern
+                node_info->ext = createContact();
+                //if back up is myself(am anchor), choose another intern node to be extern
                 if(strcmp(node_info->bck->id, node_info->id)==0){
                     //check if there are intern neighbors
                     if(node_info->intr==NULL){
-                        node_info->ext = createContact();
-                        fillContact(node_info->ext, node_info->id, node_info->port, node_info->port);
+                        //alone in the network
+                        fillContact(node_info->ext, node_info->id, node_info->ip, node_info->port);
                     }else{
                         promoteEXT(node_info);
+                        //send extern message to new extern since it is now an anchor node
+                        extern_send(node_info, node_info->ext->fd);
                     }
                 }else{
                     int new_fd = connecttonode(node_info->bck->ip, node_info->bck->port);
@@ -260,6 +263,7 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                         return -1;
                     }
                     FD_SET(new_fd, rfds);
+                    node_info->ext->fd = new_fd;
                     fillContact(node_info->ext, node_info->bck->id, node_info->bck->ip, node_info->bck->port);         
                     new_send(new_fd, node_info->id, node_info->ip, node_info->port);
                 }

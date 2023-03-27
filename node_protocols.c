@@ -116,7 +116,6 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
 
 int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[], char port[]){
     //INPUT ERROR CHECK||||||||||||||||||
-    
     //unknown contact
     if(strcmp(sender->id, "-1") == 0){
         fillContact(sender, id_rcv, ip, port);

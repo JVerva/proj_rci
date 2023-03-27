@@ -96,7 +96,6 @@ int connecttonode(char *t_ip, char *t_port){
     memset(&hints,0,sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    printf("%s %s\n", t_ip, t_port);
     int n=getaddrinfo(t_ip, t_port ,&hints, &res);
     if(n!=0){
         printf("error getting node address %d.\n",n);
