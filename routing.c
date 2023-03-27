@@ -1,14 +1,14 @@
 #include "routing.h"
 
 
-Routing createRoute(char dest[], char route[]){
-    Routing temp = (Routing)malloc(sizeof(Routing));
+Routing createRoute(char dest[], Contact route){
+    Routing temp = (Routing)malloc(sizeof(struct routing));
     strcpy(temp->dest, dest);
-    strcpy(temp->route, route);
+    temp->route = route;
     temp->next = NULL;
 }
 
-Routing addRoute(Routing head, char dest[], char route[]){
+Routing addRoute(Routing head, char dest[], Contact route){
     Routing temp, aux;
 
     temp = createRoute(dest, route);
@@ -59,4 +59,30 @@ void closeRoutingTable(Routing head){
         free(aux1);
     }
     return;
+}
+
+
+Contact checkRoute(Routing head, char dest[]){
+    Routing aux = head;
+
+    while(aux != NULL){
+        if(strcmp(aux->dest, dest) == 0){
+            return aux->route;
+        }
+        aux = aux->next;
+    }
+    return NULL;
+}
+
+
+void show_routing(Routing head){
+    Routing aux = head;
+
+    printf(" %s%s%s%s%s\n", BOLD, YEL, "ROUTING TABLE:", NORM, NBOLD);
+    printf(" %s%-13s%s | %s%-10s%s\n", YEL, "Destination", WHI, YEL, "Neighbor");
+    printf("------------------------------------------\n");
+
+    while(aux != NULL){
+        printf(" %-13s | %-10s\n",  aux->dest, aux->route->id);
+    }
 }
