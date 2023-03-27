@@ -131,6 +131,7 @@ int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[]
 }
 
 int promoteEXT(struct node_info* node){
+    node->ext = removeContact(node->ext, node->ext);
     node->ext = node->intr;
     if(node->intr->next!=NULL){
         node->intr = node->intr->next;

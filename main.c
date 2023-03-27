@@ -102,7 +102,7 @@ int main(int argc, char* argv[]){
                             FD_SET(fd_tcp, &rfds);
                             strcpy(id, args[1]);
                             strcpy(net, args[0]);
-                            if(join(fd_udp,fd_tcp, node_info, net, id, ip, port, *node_server)==0){
+                            if(join(fd_udp,fd_tcp, node_info, net, id, ip, port, *node_server, &rfds)==0){
                                 joined = 1;
                             }else{
                                 FD_CLR(fd_tcp, &rfds);

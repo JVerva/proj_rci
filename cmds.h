@@ -18,7 +18,7 @@
 #define NBOLD   "\e[m"
 
 int commandcheck(char[], char*[]);
-int join(int, int, struct node_info*, char[] , char[], char[], char[], struct addrinfo);
+int join(int, int, struct node_info*, char[] , char[], char[], char[], struct addrinfo, fd_set*);
 int djoin(int, struct node_info*, char[] , char[], char[], char[],char[], struct addrinfo);
 //unregisters node from network
 int leave(int udp, int tcp, char net[], char id[],struct node_info** node_info,  struct addrinfo serverinfo, fd_set* rfds);

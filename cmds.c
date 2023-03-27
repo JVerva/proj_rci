@@ -98,7 +98,7 @@ int commandcheck(char buffer[], char** args){
 }
 
 //joins node to network. if node id is already in the networks, use a new free one.
-int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char ip[], char tcp[], struct addrinfo serverinfo){
+int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char ip[], char tcp[], struct addrinfo serverinfo, fd_set* rfds){
     //verify arguments
     if(verifynet(net)!=0){
         fprintf(stderr, "net id is invaid.\n");
@@ -177,6 +177,7 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
             return -1;
         }
         //set node info extern
+        FD_SET(new_fd, rfds);
         nodeinfo->ext = createContact();
         nodeinfo->ext->fd = new_fd;
         fillContact(nodeinfo->ext,node, t_ip,t_port);

@@ -88,6 +88,7 @@ void closeContacts(Contact head){
     Contact aux1 = head;
     while(aux!=NULL){
         if(aux->fd!=-1){
+            printf("closed %s.\n", aux->id);
             close(aux->fd);
         }
         aux1 = aux;
