@@ -7,7 +7,7 @@ Name createName(char file[]){
     return temp;
 }
 
-Name addName(Name head, char file){
+Name addName(Name head, char file[]){
     Name temp, aux;
 
     temp = createName(file);

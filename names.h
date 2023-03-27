@@ -2,16 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct name{
-    char file[100];
-    struct name* next;
-};
-
 #define YEL "\x1b[33m"
 #define WHI "\x1b[37m"
 #define NORM "\x1b[m"
 #define BOLD  "\e[1m"
 #define NBOLD   "\e[m"
+
+struct name{
+    char file[100];
+    struct name* next;
+};
 
 typedef struct name* Name;
 
@@ -20,7 +20,7 @@ Name createName(char file[]);
 
 //create name struct and insert in list
 //returns updated list head
-Name addName(Name head, char file);
+Name addName(Name head, char file[]);
 
 //remove name from list
 //returns updated list head

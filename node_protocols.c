@@ -152,3 +152,45 @@ int extern_send(struct node_info* nodeinfo, int fd){
     write(fd, msg ,44);
     return 0;
 }
+
+int query_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char origin[], char name[]){
+    Contact route_dest, aux;
+
+    //check input error|||||||||||||||||||||||
+
+    //update routing table of sender
+    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
+        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
+    }
+    
+    if(strcmp(nodeinfo->id, dest) == 0){//query is for this node
+        if(checkName(nodeinfo->names, name) == 0){
+            //envia CONTENT|||||||||||||
+        }
+        else{
+            //envia NOCONTENT
+        }
+    }else{//query is NOT for this node
+        //check if dest is in routing table
+        if(route_dest = checkRoute(nodeinfo->rout_table, dest) == NULL){//if not found        
+            //send query to EXT
+            if(nodeinfo->ext != sender){
+                //send QUERY||||||||||||||||||
+            }
+            //send query to every internal neighbor
+            aux = nodeinfo->intr;
+            while(aux != NULL){
+                if(aux != sender){
+                    //send QUERY|||||||||||||||||
+                }
+            }
+        }else{
+            //send QUERY through route||||||||||||
+        }
+    }
+    return 0;
+}
+
+int content_send(struct node_info* nodeinfo, char name, ){}
+
+int query_send(struct node_info* nodeinfo, )

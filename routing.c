@@ -79,10 +79,11 @@ void show_routing(Routing head){
     Routing aux = head;
 
     printf(" %s%s%s%s%s\n", BOLD, YEL, "ROUTING TABLE:", NORM, NBOLD);
-    printf(" %s%-13s%s | %s%-10s%s\n", YEL, "Destination", WHI, YEL, "Neighbor");
+    printf(" %s%-13s%s | %s%-10s%s\n", YEL, "Destination", WHI, YEL, "Neighbor", NORM);
     printf("------------------------------------------\n");
 
     while(aux != NULL){
         printf(" %-13s | %-10s\n",  aux->dest, aux->route->id);
     }
 }
+

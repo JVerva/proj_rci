@@ -3,13 +3,16 @@
 #include <stdlib.h>
 #include "contact.h"
 #include "utils.h"
+#include "names.h"
+#include "routing.h"
 
 struct node_info{
     char id[3];
     Contact ext;
     Contact bck;
     Contact intr;
-    struct routing *rout_table;
+    Routing rout_table;
+    Name names;
 };
 
 //initializes node_info struct as the default start settings
