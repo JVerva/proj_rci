@@ -124,7 +124,6 @@ int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[]
     if(strcmp(nodeinfo->id, nodeinfo->ext->id) == 0){
         promoteEXT(nodeinfo);
     }
-
     extern_send(nodeinfo, sender->fd);
     return 0;
 }
@@ -141,17 +140,17 @@ int promoteEXT(struct node_info* node){
 }
 
 int new_send(int fd, char id[], char ip[], char tcp[]){
-    char msg[44];
-    memset(msg, 0, 44);
-    sprintf(msg, "NEW %s %s %s", id, ip, tcp);//verificar se funcionou||||||||||||||
+    char msg[45];
+    memset(msg, 0, 45);
+    sprintf(msg, "NEW %s %s %s\n", id, ip, tcp);//verificar se funcionou||||||||||||||
     write(fd, msg ,44);
     return 0;
 }
 
 int extern_send(struct node_info* nodeinfo, int fd){
-    char msg[44];
-    memset(msg,0,44);
-    sprintf(msg, "EXTERN %s %s %s", nodeinfo->ext->id, nodeinfo->ext->ip, nodeinfo->ext->port);
+    char msg[45];
+    memset(msg,0,45);
+    sprintf(msg, "EXTERN %s %s %s\n", nodeinfo->ext->id, nodeinfo->ext->ip, nodeinfo->ext->port);
     write(fd, msg ,44);
     return 0;
 }
