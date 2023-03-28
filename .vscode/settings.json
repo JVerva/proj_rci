@@ -2,6 +2,8 @@
     "C_Cpp.errorSquiggles": "enabled",
     "files.associations": {
         "contact.h": "c",
-        "utils.h": "c"
+        "utils.h": "c",
+        "stdlib.h": "c",
+        "routing.h": "c"
     }
 }

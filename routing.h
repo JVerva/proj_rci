@@ -1,10 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef DEFINITIONS_H
-    #define DEFINITIONS_H
-    #include "contact.h"
-#endif
+#include "contact.h"
 
 #define YEL "\x1b[33m"
 #define WHI "\x1b[37m"

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall
 LDFLAGS =
-OBJFILES = contact.o utils.o node_protocols.o cmds.o main.o
+OBJFILES = names.o routing.o contact.o utils.o node_protocols.o cmds.o main.o
 TARGET = cot
 
 all: $(TARGET)

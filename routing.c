@@ -6,6 +6,7 @@ Routing createRoute(char dest[], Contact route){
     strcpy(temp->dest, dest);
     temp->route = route;
     temp->next = NULL;
+    return temp;
 }
 
 Routing addRoute(Routing head, char dest[], Contact route){
