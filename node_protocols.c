@@ -302,7 +302,6 @@ int withdraw_send(int fd, char id[]){
     return 0;
 }
 
-<<<<<<< HEAD
 int withdraw_rcv(struct node_info* nodeinfo, Contact sender, char id[]){
     nodeinfo->rout_table = removeRoute(nodeinfo->rout_table,id);
     //send to all neighbors
@@ -314,9 +313,5 @@ int withdraw_rcv(struct node_info* nodeinfo, Contact sender, char id[]){
             withdraw_send(aux->fd, id);
         }
     }
-=======
-int withdraw_rcv(struct node_info* nodeinfo, char id[]){
-    removeRoute(nodeinfo->rout_table,id);
->>>>>>> af13c6dc387a7701f628b993e6cfd3e937e3b619
     return 0;
 }
