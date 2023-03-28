@@ -1,5 +1,4 @@
 #include <sys/types.h>
-
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netdb.h>
@@ -175,6 +174,12 @@ int main(int argc, char* argv[]){
                         freeaddrinfo(node_server);
                         free(args);
                         return 0;
+                    break;
+                    case 11:
+                        //cr clear routing
+                        closeRoutingTable(node_info->rout_table);
+                        node_info->rout_table = NULL;
+                    break;
                     default:
                         fprintf(stderr, "command not yet implemented.\n");
                     break;
@@ -186,7 +191,9 @@ int main(int argc, char* argv[]){
                 checknewconnection(fd_tcp, node_info, &aux_rfds, &rfds);
                 //any neighbor ready
                 //check extern node
-                handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
+                if(strcmp(node_info->ext->id, node_info->id) != 0){
+                    handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
+                }
                 //check inter nodes
                 contact_aux = node_info->intr;
                 while(contact_aux != NULL){
@@ -267,14 +274,16 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
         }else if(n == 0){
             //contacts socket is closed
             //take it out of routing table
-            removeRoute(node_info->rout_table, contact->id);
-            //send withdraw msg
-            if(strcmp(node_info->ext->id,contact->id)!=0){
-                withdraw_send(node_info->ext->fd,contact->id);
-            }
-            for(Contact aux = node_info->intr; aux != NULL; aux = aux->next){
-                if(strcmp(aux->id, contact->id)!=0){
-                    withdraw_send(aux->fd, contact->id);
+            if(node_info->rout_table!=NULL){
+                node_info->rout_table = removeRoute(node_info->rout_table, contact->id);
+                //send withdraw msg
+                if(strcmp(node_info->ext->id,contact->id)!=0){
+                    withdraw_send(node_info->ext->fd,contact->id);
+                }
+                for(Contact aux = node_info->intr; aux != NULL; aux = aux->next){
+                    if(strcmp(aux->id, contact->id)!=0){
+                        withdraw_send(aux->fd, contact->id);
+                    }
                 }
             }
             //if it is extern contact, connect to backup
@@ -333,7 +342,7 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                 break;
                 case 2:
                     //withdraw
-                    if(withdraw_rcv(node_info, args[0])!=0){
+                    if(withdraw_rcv(node_info, contact, args[0])!=0){
                         fprintf(stderr, "error recieving withdraw msg.\n");
                         return -1;
                     }
@@ -349,6 +358,7 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                 case 5:
                     //nocontent
                     nocontent_rcv(node_info, contact, args[0], args[1], args[2]);
+                break;
                 case -1:
                     //error
                     fprintf(stderr, "error: message does not correspond to node protocol.\n");

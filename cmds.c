@@ -1,6 +1,6 @@
 #include "cmds.h"
 
-const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit"};
+const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit", "st", "sn", "sr", "cr"};
 
 //checks if commands are valid, returns comand index if they are, returns -1 and prints error msg if they aren't
 //args gets filled with arguments for command
@@ -90,6 +90,34 @@ int commandcheck(char buffer[], char** args){
             index = -1;
         }else{
             index = 10;
+        }
+    }else if(strcmp(cmd,CMDS[11])==0){
+        if(n!=0){
+            fprintf(stderr, "%s error: wrong number of arguments.\n", CMDS[10]);
+            index = -1;
+        }else{
+            index = 6;
+        }
+    }else if(strcmp(cmd,CMDS[12])==0){
+        if(n!=0){
+            fprintf(stderr, "%s error: wrong number of arguments.\n", CMDS[10]);
+            index = -1;
+        }else{
+            index = 7;
+        }
+    }else if(strcmp(cmd,CMDS[13])==0){
+        if(n!=0){
+            fprintf(stderr, "%s error: wrong number of arguments.\n", CMDS[10]);
+            index = -1;
+        }else{
+            index = 8;
+        }
+    }else if(strcmp(cmd,CMDS[14])==0){
+        if(n!=0){
+            fprintf(stderr, "%s error: wrong number of arguments.\n", CMDS[10]);
+            index = -1;
+        }else{
+            index = 11;
         }
     }else{
         fprintf(stderr, "error: %s is not a valid command.\n", cmd);

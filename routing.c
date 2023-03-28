@@ -31,19 +31,7 @@ Routing removeRoute(Routing head, char id[]){
 
     while(front != NULL){
         //if deprecated is found
-        if(strcmp(front->dest, id) == 0){
-            //if deprecated is the head
-            if(back == NULL){
-                new_head = front->next;
-            //if deprecated is the tail
-            }else if(front->next == NULL){
-                back->next = NULL;
-            //if deprecated is in the middle
-            }else{
-                back->next = front->next;
-            }
-            free(front);
-        }else if(strcmp(front->route->id, id) == 0){
+        if(strcmp(front->dest, id) == 0 || strcmp(front->route->id, id) == 0){
             //if deprecated is the head
             if(back == NULL){
                 new_head = front->next;

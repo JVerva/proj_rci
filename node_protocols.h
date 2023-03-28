@@ -64,4 +64,4 @@ int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char 
 int withdraw_send(int fd, char id[]);
 
 //removes all instances of id in routing table
-int withdraw_rcv(struct node_info* nodeinfo, char id[]);
+int withdraw_rcv(struct node_info* nodeinfo, Contact sender, char id[]);

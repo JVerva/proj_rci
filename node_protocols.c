@@ -302,7 +302,16 @@ int withdraw_send(int fd, char id[]){
     return 0;
 }
 
-int withdraw_rcv(struct node_info* nodeinfo, char id[]){
-    removeRoute(nodeinfo->rout_table,id);
+int withdraw_rcv(struct node_info* nodeinfo, Contact sender, char id[]){
+    nodeinfo->rout_table = removeRoute(nodeinfo->rout_table,id);
+    //send to all neighbors
+    if(strcmp(nodeinfo->ext->id,sender->id)!=0){
+        withdraw_send(nodeinfo->ext->fd, id);
+    }
+    for(Contact aux = nodeinfo->intr; aux!=NULL; aux = aux->next){
+        if(strcmp(aux->id,sender->id)!=0){
+            withdraw_send(aux->fd, id);
+        }
+    }
     return 0;
 }
