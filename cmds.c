@@ -5,7 +5,7 @@ const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topol
 //checks if commands are valid, returns comand index if they are, returns -1 and prints error msg if they aren't
 //args gets filled with arguments for command
 int commandcheck(char buffer[], char** args){
-    int index = 0;
+    int index = -1;
     int n = -1;
     char cmd[20];
     char* token = NULL;
@@ -57,6 +57,7 @@ int commandcheck(char buffer[], char** args){
     }else if(strcmp(cmd,CMDS[4])==0){
         if(n!=2){
             fprintf(stderr, "%s error: wrong number of arguments.\n", CMDS[4]);
+        }else{
             index = 4;
         }
     }else if(strcmp(cmd,CMDS[5])==0){
@@ -67,7 +68,7 @@ int commandcheck(char buffer[], char** args){
             index = 6;
             args[0] = args[1];
             args[1] = NULL;
-        }else if(strcmp(args[0],CMDS[6])==0){
+        }else if(strcmp(args[0],CMDS[7])==0){
             index = 7;
             args[0] = args[1];
             args[1] = NULL;
@@ -279,5 +280,32 @@ int show_topology(struct node_info* node){
         }
     }
     printf("---------------------------------------------------------\n");
+    return 0;
+}
+
+int get(struct node_info* nodeinfo, char dest[], char name[]){
+    Contact route_dest, aux;
+    //check input error||||||||||||||||||||||||
+    if(strcmp(nodeinfo->id, dest)==0){
+        printf("cannot get name from self.\n");
+        return 0;
+    }
+    //check if dest is in routing table
+    if((route_dest = checkRoute(nodeinfo->rout_table, dest)) == NULL){//if not found  
+        //send query to EXT
+        if(nodeinfo->ext->fd != -1){
+            query_send(nodeinfo->ext->fd, dest, nodeinfo->id, name);
+        }else if(nodeinfo->intr == NULL){
+            printf("no neighbors to get name from.\n");
+        }
+        //send query to every internal neighbor
+        aux = nodeinfo->intr;
+        while(aux != NULL){
+            query_send(aux->fd, dest, nodeinfo->id, name);
+        }
+    }else{
+        //send QUERY through route
+        query_send(route_dest->fd, dest, nodeinfo->id, name);
+    }
     return 0;
 }

@@ -23,3 +23,4 @@ int djoin(int, struct node_info*, char[] , char[], char[], char[],char[], struct
 //unregisters node from network
 int leave(int udp, int tcp, char net[], char id[],struct node_info** node_info,  struct addrinfo serverinfo, fd_set* rfds);
 int show_topology(struct node_info* node);
+int get(struct node_info* nodeinfo, char dest[], char name[]);

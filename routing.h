@@ -35,3 +35,6 @@ void closeRoutingTable(Routing head);
 //returns the neighbor that can route to the destination , if not found returns NULL
 Contact checkRoute(Routing head, char dest[]);
 
+//print to terminal the routing table
+void show_routing(Routing head);
+

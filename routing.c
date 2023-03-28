@@ -26,12 +26,12 @@ Routing addRoute(Routing head, char dest[], Contact route){
     return head;
 }
 
-Routing removeRoute(Routing head, char dest[]){
+Routing removeRoute(Routing head, char id[]){
     Routing front = head, back = NULL, new_head = head;
 
     while(front != NULL){
         //if deprecated is found
-        if(strcmp(front->dest, dest) == 0){
+        if(strcmp(front->dest, id) == 0){
             //if deprecated is the head
             if(back == NULL){
                 new_head = front->next;
@@ -43,7 +43,18 @@ Routing removeRoute(Routing head, char dest[]){
                 back->next = front->next;
             }
             free(front);
-            break;
+        }else if(strcmp(front->route->id, id) == 0){
+            //if deprecated is the head
+            if(back == NULL){
+                new_head = front->next;
+            //if deprecated is the tail
+            }else if(front->next == NULL){
+                back->next = NULL;
+            //if deprecated is in the middle
+            }else{
+                back->next = front->next;
+            }
+            free(front);
         }
         back = front;
         front = front->next;
@@ -81,10 +92,11 @@ void show_routing(Routing head){
 
     printf(" %s%s%s%s%s\n", BOLD, YEL, "ROUTING TABLE:", NORM, NBOLD);
     printf(" %s%-13s%s | %s%-10s%s\n", YEL, "Destination", WHI, YEL, "Neighbor", NORM);
-    printf("------------------------------------------\n");
+    printf("---------------------------------\n");
 
     while(aux != NULL){
         printf(" %-13s | %-10s\n",  aux->dest, aux->route->id);
+        aux = aux->next;
     }
 }
 

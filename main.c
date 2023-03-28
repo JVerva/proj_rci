@@ -12,6 +12,7 @@
 #include "cmds.h"
 #include "utils.h"
 
+
 int inittcpsocket(char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
 int checkfornode(char[], char[]);
@@ -59,7 +60,8 @@ int main(int argc, char* argv[]){
     fd_set rfds, aux_rfds;
     //number of ready file descriptors
     int counter;
-    char buffer[128] = {"\0"};
+    char buffer[128];
+    memset(buffer, 0, sizeof(buffer));
 
     //reset file descriptor set
     FD_ZERO(&rfds);
@@ -126,9 +128,33 @@ int main(int argc, char* argv[]){
                             fprintf(stderr,"already joined the network as node %s.\n", id);
                         }
                     break;
+                    case 2:
+                        //create name
+                        node_info->names = addName(node_info->names, args[0]);
+                    break;
+                    case 3:
+                        //delete name
+                        node_info->names = removeName(node_info->names, args[0]);
+                    break;
+                    case 4:
+                        //get
+                        if(joined ==1){
+                            get(node_info, args[0], args[1]);
+                        }else{
+                            fprintf(stderr,"node not registered.\n");
+                        }
+                    break;
                     case 6:
                         //show topology
                         show_topology(node_info);
+                    break;
+                    case 7:
+                        //show names
+                        show_names(node_info->names);
+                    break;
+                    case 8:
+                        //show routing
+                        show_routing(node_info->rout_table);
                     break;
                     case 9:
                         //leave
@@ -293,6 +319,18 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                         fprintf(stderr, "error recieving extern msg.\n");
                         return -1;
                     }
+                break;
+                case 3:
+                    //query
+                    query_rcv(node_info, contact, args[0], args[1], args[2]);
+                break;
+                case 4:
+                    //content
+                    content_rcv(node_info, contact, args[0], args[1], args[2]);
+                break;
+                case 5:
+                    //nocontent
+                    nocontent_rcv(node_info, contact, args[0], args[1], args[2]);
                 break;
                 case -1:
                     //error
