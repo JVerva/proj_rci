@@ -4,20 +4,20 @@ const char* MSGS[] = {"NEW", "EXTERN", "WITHDRAW", "QUERY", "CONTENT", "NOCONTEN
 
 struct node_info* initNode_info(){
     struct node_info *temp = (struct node_info*)malloc(sizeof(struct node_info));
+    strcpy(temp->id, "-1");
+    strcpy(temp->ip, "-1");
+    strcpy(temp->port, "-1");
     temp->intr = NULL;
-    temp->ext = createContact();//must be closed|||||||||||||||
-    strcpy(temp->ext->id, "-1");
-    temp->bck = createContact();
-    strcpy(temp->bck->id, "-1");
+    temp->ext = NULL;//must be closed|||||||||||||||
+    temp->bck = NULL;
+    temp->rout_table = NULL;
     return temp;
 }
 
 void closeNode_info(struct node_info *node){
-    close(node->ext->fd);
-    free(node->ext);
-    close(node->bck->fd);
-    free(node->bck);
-    freeContacts(node->intr);
+    removeContact(node->bck,node->bck);
+    removeContact(node->ext,node->ext);
+    closeContacts(node->intr);
     free(node);
 }
 
@@ -116,26 +116,26 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
 
 int new_rcv(struct node_info* nodeinfo, Contact sender, char id_rcv[], char ip[], char port[]){
     //INPUT ERROR CHECK||||||||||||||||||
-    
     //unknown contact
     if(strcmp(sender->id, "-1") == 0){
         fillContact(sender, id_rcv, ip, port);
     }
     //if node is alone, incoming node becomes its ext
     if(strcmp(nodeinfo->id, nodeinfo->ext->id) == 0){
-        promoteEXT(nodeinfo, sender);
-    //else its a new internal neighbor
-    }else{
+        promoteEXT(nodeinfo);
     }
     extern_send(nodeinfo, sender->fd);
     return 0;
 }
 
-int promoteEXT(struct node_info* node, Contact promotee){
-    fillContact(node->ext, promotee->id, promotee->ip, promotee->port);
-    node->ext->fd = promotee->fd;
-    promotee->fd = -1;
-    node->intr = removeContact(node->intr, promotee);
+int promoteEXT(struct node_info* node){
+    node->ext = removeContact(node->ext, node->ext);
+    node->ext = node->intr;
+    if(node->intr->next!=NULL){
+        node->intr = node->intr->next;
+    }else{
+        node->intr = NULL;
+    }
     return 0;
 }
 

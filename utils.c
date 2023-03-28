@@ -20,7 +20,7 @@ int verifyid(char* id){
         return 1;
     }else{
         for(int i = 0; i < 2; i++){
-            if(!(id[i]<57 && id[i]>47)){
+            if(!(id[i]<58 && id[i]>47)){
                 return 1;
             }
         }
@@ -96,12 +96,10 @@ int connecttonode(char *t_ip, char *t_port){
     memset(&hints,0,sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-
-    printf("%s, %s.\n", t_ip, t_port);
-
     int n=getaddrinfo(t_ip, t_port ,&hints, &res);
     if(n!=0){
         printf("error getting node address %d.\n",n);
+        freeaddrinfo(res);
         return -1;
     }
     
@@ -110,10 +108,13 @@ int connecttonode(char *t_ip, char *t_port){
     n=connect(fd_tcp,res->ai_addr,res->ai_addrlen);
     if(n==-1){
         perror("error connecting to node");
+        freeaddrinfo(res);
         return -1;
     }
 
     printf("connected to node sucessfully.\n");
+
+    freeaddrinfo(res);
 
     return fd_tcp;
 }
@@ -136,11 +137,11 @@ int getnodelist(int fd_udp,struct addrinfo serverinfo, char* net, char node_list
 }
 
 //creates node in network
-int createnode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char* ip, char* tcp){
-    char cmd[30];
-    char buff[256];
+int registernode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char* ip, char* tcp){
+    char cmd[30] = {"\0"};
+    char buff[256] = {"\0"};
     memset(buff,0,256);
-    memset(cmd,0,30);
+    memset(cmd,0,40);
     sprintf(cmd, "REG %s %s %s %s", net, id, ip, tcp);
     int n = sendto(fd_udp, cmd , 40 ,0,serverinfo.ai_addr, serverinfo.ai_addrlen);
     if(n == -1){
@@ -156,5 +157,31 @@ int createnode(int fd_udp,struct addrinfo serverinfo, char* net, char* id, char*
     if(strcmp(buff, "OKREG")!=0){
         return -1;
     }
+    return 0;
+}
+
+int unregisternode(int fd_udp,struct addrinfo serverinfo, char* net, char* id){
+    char cmd[30];
+    char buff[256];
+    memset(buff,0,256);
+    memset(cmd,0,30);
+    sprintf(cmd, "UNREG %s %s", net, id);
+    int n = sendto(fd_udp, cmd, 12, 0, serverinfo.ai_addr, serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "sendto error.\n");
+        return -1;
+    }
+
+    //receive server response
+    n = recvfrom(fd_udp, buff,256,0,serverinfo.ai_addr,&serverinfo.ai_addrlen);
+    if(n == -1){
+        fprintf(stderr, "recvfrom error.\n");
+        return -1;
+    }
+    if (strcmp("OKUNREG", buff)!=0){
+        fprintf(stderr, "leave command not successful %s\n", buff);
+        return -1;
+    }
+    printf("node left.\n");
     return 0;
 }

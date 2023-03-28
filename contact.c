@@ -4,6 +4,10 @@
 Contact createContact(){
     Contact temp; // declare a Contact
     temp = (Contact)malloc(sizeof(struct contact)); // allocate memory using malloc()
+    strcpy(temp->id, "-1");
+    strcpy(temp->port, "-1");
+    strcpy(temp->ip, "-1");
+    temp->fd = -1;
     temp->next = NULL;// make next point to NULL
     return temp;//return the new Contact
 }
@@ -45,6 +49,7 @@ Contact removeContact(Contact head, Contact deprecated){//can be changed as to b
                 back->next = front->next;
             }
             if(deprecated->fd != -1){
+                printf("closed %s.\n", deprecated->id);
                 close(deprecated->fd);
             }
             free(deprecated);
@@ -82,7 +87,10 @@ void closeContacts(Contact head){
     Contact aux = head;
     Contact aux1 = head;
     while(aux!=NULL){
-        close(aux->fd);
+        if(aux->fd!=-1){
+            printf("closed %s.\n", aux->id);
+            close(aux->fd);
+        }
         aux1 = aux;
         aux = aux->next;
         free(aux1);

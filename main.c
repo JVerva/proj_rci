@@ -1,4 +1,5 @@
 #include <sys/types.h>
+
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netdb.h>
@@ -14,19 +15,21 @@
 int inittcpsocket(char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
 int checkfornode(char[], char[]);
-int handleconnection(struct node_info* node_info, Contact contact,fd_set* aux_rfds);
+int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds);
+int checknewconnection(int fd_tcp, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds);
 
 char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
 
 int main(int argc, char* argv[]){
-    char *net;
-    char *id = {"-1"};
-    char *reg_ip = (char*)malloc(sizeof(char*));
-    char *reg_port = (char*)malloc(sizeof(char*));
-    Contact contact_aux=NULL;
+    char net[4] = {"-1"};
+    char id[3] = {"-1"};
+    char *reg_ip;
+    char *reg_port;
+    Contact contact_aux = NULL;
     Contact contact_temp = NULL;
     int joined = 0;
+
     //get arguments
     if(argc != 5 && argc != 3){
         fprintf(stderr, "wrong number of arguments: %d.\n", argc);
@@ -35,19 +38,19 @@ int main(int argc, char* argv[]){
         reg_ip = argv[3];
         reg_port = argv[4];
     }else if(argc == 3){
-        strcpy(reg_ip, DEFAULT_IP);
-        strcpy(reg_port, DEFAULT_PORT);
+        reg_ip = DEFAULT_IP;
+        reg_port = DEFAULT_PORT;
     }
 
     char *ip = argv[1];
     char *port = argv[2];
 
-    struct addrinfo* node_server = (struct addrinfo*)malloc(sizeof(struct addrinfo*));
+    struct addrinfo* node_server;
 
-    //init tcp socket
-    int fd_tcp = inittcpsocket(port);
     //init udp sockt to comunicate with network server
     int fd_udp = initudpsocket(reg_ip, reg_port, &node_server);
+    //tcp file descriptor variable
+    int fd_tcp;
 
     //Node information
     struct node_info *node_info = initNode_info();
@@ -56,14 +59,12 @@ int main(int argc, char* argv[]){
     fd_set rfds, aux_rfds;
     //number of ready file descriptors
     int counter;
-    char buffer[128];
-    memset(buffer, 0, 128);
+    char buffer[128] = {"\0"};
+
     //reset file descriptor set
     FD_ZERO(&rfds);
     //add keyboard to file descriptor set
     FD_SET(0, &rfds);
-    //add tcp socket to file descriptor set
-    FD_SET(fd_tcp, &rfds);
 
     //program loop
     while(1){
@@ -71,7 +72,7 @@ int main(int argc, char* argv[]){
         //use auxiliar as not to set everything every iteration
         aux_rfds = rfds;
 
-        counter = select(fd_tcp+10, &aux_rfds, NULL, NULL, NULL);
+        counter = select(fd_udp+10, &aux_rfds, NULL, NULL, NULL);
 
         if(counter<=0){
             perror("select error");
@@ -86,7 +87,7 @@ int main(int argc, char* argv[]){
                 if(n == -1){
                     fprintf(stderr, "read error.\n");
                 }
-                char **args = (char**)malloc(6*sizeof(char**));
+                char **args = (char**)malloc(6*sizeof(char*));
                 int cmd = commandcheck(buffer, args);
                 switch(cmd){
                     case -1:
@@ -95,18 +96,35 @@ int main(int argc, char* argv[]){
                     case 0:
                         //join
                         if(joined == 0){
-                            id = strdup(args[1]);
-                            net = strdup(args[0]);
-                            join(fd_udp,fd_tcp, node_info, net, id, ip, port, *node_server);
-                            joined = 1;
-                        }else{
+                            //init tcp socket
+                            fd_tcp = inittcpsocket(port);
+                            //add tcp socket to file descriptor set
+                            FD_SET(fd_tcp, &rfds);
+                            strcpy(id, args[1]);
+                            strcpy(net, args[0]);
+                            if(join(fd_udp,fd_tcp, node_info, net, id, ip, port, *node_server, &rfds)==0){
+                                joined = 1;
+                            }else{
+                                FD_CLR(fd_tcp, &rfds);
+                            }
+                        }
+                        else{
                             fprintf(stderr,"already joined the network as node %s.\n", id);
                         }
                     break;
                     case 1:
-                        //djoin
-                        djoin(fd_udp,fd_tcp, args[0], args[1], args[2], args[3], args[4], *node_server);
-                        node_info = initNode_info(id);
+                        if(joined == 0){
+                            //init tcp socket
+                            fd_tcp = inittcpsocket(port);
+                            //djoin
+                            if(djoin(fd_udp,node_info, args[0], args[1], args[2], args[3], args[4], *node_server)==0){
+                                joined = 1;
+                            }else{
+                                FD_CLR(fd_tcp, &rfds);
+                            }
+                        }else{
+                            fprintf(stderr,"already joined the network as node %s.\n", id);
+                        }
                     break;
                     case 6:
                         //show topology
@@ -117,18 +135,19 @@ int main(int argc, char* argv[]){
                         if(joined == 0){
                             fprintf(stderr,"node not registered.\n");
                         }else{
-                            leave(fd_udp, net, atoi(id), *node_server);
-                            //reset variables
-                            closeNode_info(node_info);//o LEAVE DEVE REINICIAR O NODE_INFO|||||||||||||||||||||||
+                            FD_CLR(fd_tcp, &rfds);
+                            FD_CLR(node_info->ext->fd, &rfds);
+                            leave(fd_udp, fd_tcp, net, id, &node_info, *node_server, &rfds);
                             joined = 0;
                         }
                     break;
                     case 10:
                         //exit
-                        //closeNode_info(node_info);//LEAVE TBM FAZ ISTO|||||||||||||||||
-                        //closeContacts(node_info->intr);
-                        close(fd_tcp);
                         close(fd_udp);
+                        //free whatever is missing
+                        closeNode_info(node_info);
+                        freeaddrinfo(node_server);
+                        free(args);
                         return 0;
                     default:
                         fprintf(stderr, "command not yet implemented.\n");
@@ -136,37 +155,22 @@ int main(int argc, char* argv[]){
                 }
                 free(args);
             }
-            //tcp socket ready
-            if(FD_ISSET(fd_tcp, &aux_rfds)){
-                //create new fd to deal with message
-                int new_fd;
-                struct sockaddr* addr;
-                socklen_t addr_size = sizeof(addr);
-                if((new_fd = accept(fd_tcp, (struct sockaddr*) &addr, &addr_size)) == -1){
-                    fprintf(stderr, "error accepting new connection.\n");
-                }else{
-                    printf("accepted connection.\n");
-                    //add file descriptor to select checks
-                    FD_SET(new_fd, &rfds);
-                    //create new contact with default data (to be filled later)
-                    node_info->intr = addContact(node_info->intr, "-1", new_fd);
+            if(joined == 1){
+                //tcp socket ready
+                checknewconnection(fd_tcp, node_info, &aux_rfds, &rfds);
+                //any neighbor ready
+                //check extern node
+                handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
+                //check inter nodes
+                contact_aux = node_info->intr;
+                while(contact_aux != NULL){
+                    contact_temp = contact_aux;
+                    contact_aux = contact_aux->next;
+                    handlecontact(contact_temp, node_info, &aux_rfds, &rfds);
                 }
-            }
-            //any neighbor ready
-            contact_aux = node_info->intr;
-            //check extern node
-            if(strcmp(node_info->ext->id, "-1")!=0){
-                handleconnection(node_info, node_info->ext, &aux_rfds);
-            }
-            //check intern nodes
-            while(contact_aux != NULL){
-                contact_temp = contact_aux;
-                contact_aux = contact_aux->next;
-                handleconnection(node_info, contact_temp, &aux_rfds);
             }
             memset(buffer,0,sizeof(buffer));
         }
-
     }
     return 0;
 }
@@ -198,6 +202,8 @@ int inittcpsocket(char port[]){
     //listen for incoming connections
     listen(sockfd, 5);
 
+    freeaddrinfo(res);
+
     return sockfd;
 }
 
@@ -224,42 +230,103 @@ int initudpsocket(char ip[], char port[], struct addrinfo **res){
     return sockfd;
 }
 
-int handleconnection(struct node_info* node_info, Contact contact,fd_set* aux_rfds){
+int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds){
     char buffer[128];
-    memset(buffer,0,128);
+    int flags = 0;
+    memset(buffer, 0, 128);
     if(FD_ISSET(contact->fd, aux_rfds)){
-        int n = read(contact->fd,buffer,128);
+        int n = recv(contact->fd,buffer,128,flags);
         if(n == -1){
-            fprintf(stderr, "read error.\n");
-        }
-        char **args = (char**)malloc(6*sizeof(char**));
-        int msg = messagecheck(buffer, args);
-        switch(msg){
-            case 0:
-                //new
-                if(new_rcv(node_info, contact, args[0], args[1], args[2])!=0){
-                    fprintf(stderr, "error recieving new msg.\n");
+            perror("read error");
+        }else if(n == 0){
+            //contacts socket is closed
+            //if it is extern contact, connect to backup
+            if(strcmp(node_info->ext->id,contact->id)==0){
+                FD_CLR(node_info->ext->fd, rfds);
+                node_info->ext = removeContact(node_info->ext, contact);
+                node_info->ext = createContact();
+                //if back up is myself(am anchor), choose another intern node to be extern
+                if(strcmp(node_info->bck->id, node_info->id)==0){
+                    //check if there are intern neighbors
+                    if(node_info->intr==NULL){
+                        //alone in the network
+                        fillContact(node_info->ext, node_info->id, node_info->ip, node_info->port);
+                    }else{
+                        promoteEXT(node_info);
+                        //send extern message to new extern since it is now an anchor node
+                        extern_send(node_info, node_info->ext->fd);
+                    }
+                }else{
+                    int new_fd = connecttonode(node_info->bck->ip, node_info->bck->port);
+                    if(new_fd==-1){
+                        fprintf(stderr, "failed to connect to back up.\n");
+                        return -1;
+                    }
+                    FD_SET(new_fd, rfds);
+                    node_info->ext->fd = new_fd;
+                    fillContact(node_info->ext, node_info->bck->id, node_info->bck->ip, node_info->bck->port);         
+                    new_send(new_fd, node_info->id, node_info->ip, node_info->port);
                 }
-            break;
-            case 1:
-                //extern
-                if(extern_rcv(node_info, contact->id, args[0], args[1], args[2])!=0){
-                    fprintf(stderr, "error recieving extern msg.\n");
+                //send extern message to all intern nodes
+                for(Contact aux = node_info->intr; aux != NULL; aux = aux->next){
+                    extern_send(node_info, aux->fd);
                 }
-            break;
-            case -1:
-                //error
-                fprintf(stderr, "error: message does not correspond to node protocol.\n");
-                return -1;
-            break;
-            default:
-                fprintf(stderr, "error: command not yet implemented.\n");
-                return -1;
-            break;
+            }else{
+                //if intern contact, remove from intern list
+                FD_CLR(contact->fd,rfds);
+                node_info->intr = removeContact(node_info->intr, contact);
+            }
+        }else{
+            char **args = (char**)malloc(6*sizeof(char*));
+            int msg = messagecheck(buffer, args);
+            switch(msg){
+                case 0:
+                    //new
+                    if(new_rcv(node_info, contact, args[0], args[1], args[2])!=0){
+                        fprintf(stderr, "error recieving new msg.\n");
+                        return -1;
+                    }
+                break;
+                case 1:
+                    //extern
+                    if(extern_rcv(node_info, contact->id, args[0], args[1], args[2])!=0){
+                        fprintf(stderr, "error recieving extern msg.\n");
+                        return -1;
+                    }
+                break;
+                case -1:
+                    //error
+                    fprintf(stderr, "error: message does not correspond to node protocol.\n");
+                    return -1;
+                break;
+                default:
+                    fprintf(stderr, "error: command not yet implemented.\n");
+                    return -1;
+                break;
 
+            }
+            free(args);
         }
-        free(args);
     }
     return 0;
 }
 
+int checknewconnection(int fd_tcp, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds){
+    if(FD_ISSET(fd_tcp, aux_rfds)){
+        //create new fd to deal with message
+        int new_fd;
+        struct sockaddr* addr;
+        socklen_t addr_size = sizeof(addr);
+        if((new_fd = accept(fd_tcp, (struct sockaddr*) &addr, &addr_size)) == -1){
+            fprintf(stderr, "error accepting new connection.\n");
+            return -1;
+        }else{
+            printf("accepted a connection.\n");
+            //add file descriptor to select checks
+            FD_SET(new_fd, rfds);
+            //create new contact with default data (to be filled later)
+            node_info->intr = addContact(node_info->intr, "-1", new_fd);
+        }
+    }
+    return 0;
+}
