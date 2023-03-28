@@ -60,7 +60,8 @@ int main(int argc, char* argv[]){
     fd_set rfds, aux_rfds;
     //number of ready file descriptors
     int counter;
-    char buffer[128] = {"\0"};
+    char buffer[128];
+    memset(buffer, 0, sizeof(buffer));
 
     //reset file descriptor set
     FD_ZERO(&rfds);
@@ -137,7 +138,11 @@ int main(int argc, char* argv[]){
                     break;
                     case 4:
                         //get
-                        get(node_info, args[0], args[1]);
+                        if(joined ==1){
+                            get(node_info, args[0], args[1]);
+                        }else{
+                            fprintf(stderr,"node not registered.\n");
+                        }
                     break;
                     case 6:
                         //show topology
@@ -150,6 +155,7 @@ int main(int argc, char* argv[]){
                     case 8:
                         //show routing
                         show_routing(node_info->rout_table);
+                    break;
                     case 9:
                         //leave
                         if(joined == 0){

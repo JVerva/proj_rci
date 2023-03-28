@@ -164,10 +164,9 @@ int query_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char orig
     //check input error|||||||||||||||||||||||
 
     //update routing table of sender
-    if(checkRoute(nodeinfo->rout_table, origin) != NULL){//talvez apagar a entrada que ja havia e por esta atualizada|||||||(ja esta)||||||||
-        nodeinfo->rout_table = removeRoute(nodeinfo->rout_table, origin);
+    if(checkRoute(nodeinfo->rout_table, origin) == NULL){//talvez apagar a entrada que ja havia e por esta atualizada|||||||(ja esta)||||||||
+        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
     }
-    nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
     
     if(strcmp(nodeinfo->id, dest) == 0){//query is for this node
         if(checkName(nodeinfo->names, name) == 0){
@@ -182,17 +181,18 @@ int query_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char orig
         //check if dest is in routing table
         if((route_dest = checkRoute(nodeinfo->rout_table, dest)) == NULL){//if not found  
             //send query to EXT
-            if(nodeinfo->ext != sender){
+            if(strcmp(nodeinfo->ext->id, sender->id) != 0){
                 //send QUERY
                 query_send(nodeinfo->ext->fd, dest, origin, name);
             }
             //send query to every internal neighbor
             aux = nodeinfo->intr;
             while(aux != NULL){
-                if(aux != sender){
+                if(strcmp(aux->id, sender->id) != 0){
                     //send QUERY
                     query_send(aux->fd, dest, origin, name);
                 }
+                aux = aux->next;
             }
         }else{
             //send QUERY through route
@@ -230,10 +230,9 @@ int content_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char or
     Contact route_dest, aux;
 
     //update routing table of sender
-    if(checkRoute(nodeinfo->rout_table, origin) != NULL){
-        nodeinfo->rout_table = removeRoute(nodeinfo->rout_table, origin);
+    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
+        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
     }
-    nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
 
     if(strcmp(nodeinfo->id, dest) == 0){//CONTENT message is for this node
         printf("%s NODE %s%s%s has name %s%s%s%s\n", BOLD, YEL, origin, WHI, YEL, name, NORM, NBOLD);
@@ -251,6 +250,7 @@ int content_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char or
                     //send CONTENT
                     content_send(aux->fd, dest, origin, name);
                 }
+                aux = aux->next;
             }
         }else{
             //send CONTENT through route
@@ -264,10 +264,9 @@ int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char 
     Contact route_dest, aux;
 
     //update routing table of sender
-    if(checkRoute(nodeinfo->rout_table, origin) != NULL){
-        nodeinfo->rout_table = removeRoute(nodeinfo->rout_table, origin);
+    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
+        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
     }
-    nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
 
     if(strcmp(nodeinfo->id, dest) == 0){//NOCONTENT message is for this node
         printf("%s NODE %s%s%s doesn't have name %s%s%s%s\n", BOLD, YEL, origin, WHI, YEL, name, NORM, NBOLD);
@@ -285,6 +284,7 @@ int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char 
                     //send NOCONTENT
                     nocontent_send(aux->fd, dest, origin, name);
                 }
+                aux = aux->next;
             }
         }else{
             //send NOCONTENT through route
