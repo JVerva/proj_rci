@@ -11,8 +11,7 @@
 #include <arpa/inet.h>
 #include "cmds.h"
 #include "utils.h"
-#include "routing.h"
-#include "names.h"
+
 
 int inittcpsocket(char[]);
 int initudpsocket(char[], char[], struct addrinfo**);

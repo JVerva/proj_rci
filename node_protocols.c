@@ -164,9 +164,10 @@ int query_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char orig
     //check input error|||||||||||||||||||||||
 
     //update routing table of sender
-    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
-        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
+    if(checkRoute(nodeinfo->rout_table, origin) != NULL){//talvez apagar a entrada que ja havia e por esta atualizada|||||||(ja esta)||||||||
+        nodeinfo->rout_table = removeRoute(nodeinfo->rout_table, origin);
     }
+    nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
     
     if(strcmp(nodeinfo->id, dest) == 0){//query is for this node
         if(checkName(nodeinfo->names, name) == 0){
@@ -229,9 +230,10 @@ int content_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char or
     Contact route_dest, aux;
 
     //update routing table of sender
-    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
-        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
+    if(checkRoute(nodeinfo->rout_table, origin) != NULL){
+        nodeinfo->rout_table = removeRoute(nodeinfo->rout_table, origin);
     }
+    nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
 
     if(strcmp(nodeinfo->id, dest) == 0){//CONTENT message is for this node
         printf("%s NODE %s%s%s has name %s%s%s%s\n", BOLD, YEL, origin, WHI, YEL, name, NORM, NBOLD);
@@ -262,9 +264,10 @@ int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char 
     Contact route_dest, aux;
 
     //update routing table of sender
-    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
-        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
+    if(checkRoute(nodeinfo->rout_table, origin) != NULL){
+        nodeinfo->rout_table = removeRoute(nodeinfo->rout_table, origin);
     }
+    nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
 
     if(strcmp(nodeinfo->id, dest) == 0){//NOCONTENT message is for this node
         printf("%s NODE %s%s%s doesn't have name %s%s%s%s\n", BOLD, YEL, origin, WHI, YEL, name, NORM, NBOLD);
