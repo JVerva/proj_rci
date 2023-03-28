@@ -154,3 +154,136 @@ int extern_send(struct node_info* nodeinfo, int fd){
     write(fd, msg ,44);
     return 0;
 }
+
+int query_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char origin[], char name[]){
+    Contact route_dest, aux;
+
+    //check input error|||||||||||||||||||||||
+
+    //update routing table of sender
+    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
+        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
+    }
+    
+    if(strcmp(nodeinfo->id, dest) == 0){//query is for this node
+        if(checkName(nodeinfo->names, name) == 0){
+            //envia CONTENT
+            content_send(sender->fd, origin, nodeinfo->id, name);
+        }
+        else{
+            //envia NOCONTENT
+            nocontent_send(sender->fd, origin, nodeinfo->id, name);
+        }
+    }else{//query is NOT for this node
+        //check if dest is in routing table
+        if((route_dest = checkRoute(nodeinfo->rout_table, dest)) == NULL){//if not found  
+            //send query to EXT
+            if(nodeinfo->ext != sender){
+                //send QUERY
+                query_send(nodeinfo->ext->fd, dest, origin, name);
+            }
+            //send query to every internal neighbor
+            aux = nodeinfo->intr;
+            while(aux != NULL){
+                if(aux != sender){
+                    //send QUERY
+                    query_send(aux->fd, dest, origin, name);
+                }
+            }
+        }else{
+            //send QUERY through route
+            query_send(route_dest->fd, dest, origin, name);
+        }
+    }
+    return 0;
+}
+
+int content_send(int fd, char dest[], char origin[], char name[]){
+    char msg[115];
+    memset(msg,0,115);
+    sprintf(msg, "CONTENT %s %s %s\n", dest, origin, name);
+    write(fd, msg, 115);
+    return 0;
+}
+
+int nocontent_send(int fd, char dest[], char origin[], char name[]){
+    char msg[117];
+    memset(msg,0,117);
+    sprintf(msg, "NOCONTENT %s %s %s\n", dest, origin, name);
+    write(fd, msg, 117);
+    return 0;
+}
+
+int query_send(int fd, char dest[], char origin[], char name[]){
+    char msg[113];
+    memset(msg,0,113);
+    sprintf(msg, "QUERY %s %s %s\n", dest, origin, name);
+    write(fd, msg, 113);
+    return 0;
+}
+
+int content_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char origin[], char name[]){
+    Contact route_dest, aux;
+
+    //update routing table of sender
+    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
+        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
+    }
+
+    if(strcmp(nodeinfo->id, dest) == 0){//CONTENT message is for this node
+        printf("%s NODE %s%s%s has name %s%s%s%s\n", BOLD, YEL, origin, WHI, YEL, name, NORM, NBOLD);
+    }else{//CONTENT message is NOT for this node
+        if((route_dest = checkRoute(nodeinfo->rout_table, dest)) == NULL){//if not found (will probably never happen)     
+            //send CONTENT message to EXT
+            if(nodeinfo->ext != sender){
+                //send CONTENT
+                content_send(nodeinfo->ext->fd, dest, origin, name);
+            }
+            //send CONTENT message to every internal neighbor
+            aux = nodeinfo->intr;
+            while(aux != NULL){
+                if(aux != sender){
+                    //send CONTENT
+                    content_send(aux->fd, dest, origin, name);
+                }
+            }
+        }else{
+            //send CONTENT through route
+            content_send(route_dest->fd, dest, origin, name);
+        }
+    }
+    return 0;
+}
+
+int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char origin[], char name[]){
+    Contact route_dest, aux;
+
+    //update routing table of sender
+    if(checkRoute(nodeinfo->rout_table, origin) == NULL){
+        nodeinfo->rout_table = addRoute(nodeinfo->rout_table, origin, sender);
+    }
+
+    if(strcmp(nodeinfo->id, dest) == 0){//NOCONTENT message is for this node
+        printf("%s NODE %s%s%s doesn't have name %s%s%s%s\n", BOLD, YEL, origin, WHI, YEL, name, NORM, NBOLD);
+    }else{//NOCONTENT message is NOT for this node
+        if((route_dest = checkRoute(nodeinfo->rout_table, dest)) == NULL){//if not found (will probably never happen)     
+            //send NOCONTENT message to EXT
+            if(nodeinfo->ext != sender){
+                //send NOCONTENT
+                nocontent_send(nodeinfo->ext->fd, dest, origin, name);
+            }
+            //send NOCONTENT message to every internal neighbor
+            aux = nodeinfo->intr;
+            while(aux != NULL){
+                if(aux != sender){
+                    //send NOCONTENT
+                    nocontent_send(aux->fd, dest, origin, name);
+                }
+            }
+        }else{
+            //send NOCONTENT through route
+            nocontent_send(route_dest->fd, dest, origin, name);
+        }
+    }
+    return 0;
+}
