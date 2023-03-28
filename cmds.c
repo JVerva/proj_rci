@@ -281,3 +281,21 @@ int show_topology(struct node_info* node){
     printf("---------------------------------------------------------\n");
     return 0;
 }
+
+int get(struct node_info* nodeinfo, char dest[], char name[]){
+    Contact route_dest, aux;
+
+    //check if dest is in routing table
+    if((route_dest = checkRoute(nodeinfo->rout_table, dest)) == NULL){//if not found  
+        //send query to EXT
+        query_send(nodeinfo->ext->fd, dest, nodeinfo->id, name);
+        //send query to every internal neighbor
+        aux = nodeinfo->intr;
+        while(aux != NULL){
+                query_send(aux->fd, dest, nodeinfo->id, name);
+        }
+    }else{
+        //send QUERY through route
+        query_send(route_dest->fd, dest, nodeinfo->id, name);
+    }
+}

@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 #include "cmds.h"
 #include "utils.h"
+#include "routing.h"
+#include "names.h"
 
 int inittcpsocket(char[]);
 int initudpsocket(char[], char[], struct addrinfo**);
@@ -126,10 +128,29 @@ int main(int argc, char* argv[]){
                             fprintf(stderr,"already joined the network as node %s.\n", id);
                         }
                     break;
+                    case 2:
+                        //create name
+                        node_info->names = addName(node_info->names, args[0]);
+                    break;
+                    case 3:
+                        //delete name
+                        node_info->names = removeName(node_info->names, args[0]);
+                    break;
+                    case 4:
+                        //get
+                        get(node_info, args[0], args[1]);
+                    break;
                     case 6:
                         //show topology
                         show_topology(node_info);
                     break;
+                    case 7:
+                        //show names
+                        show_names(node_info->names);
+                    break;
+                    case 8:
+                        //show routing
+                        show_routing(node_info->rout_table);
                     case 9:
                         //leave
                         if(joined == 0){
@@ -293,6 +314,18 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                         fprintf(stderr, "error recieving extern msg.\n");
                         return -1;
                     }
+                break;
+                case 3:
+                    //query
+                    query_rcv(node_info, contact, args[0], args[1], args[2]);
+                break;
+                case 4:
+                    //content
+                    content_rcv(node_info, contact, args[0], args[1], args[2]);
+                break;
+                case 5:
+                    //nocontent
+                    nocontent_rcv(node_info, contact, args[0], args[1], args[2]);
                 break;
                 case -1:
                     //error
