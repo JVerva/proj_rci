@@ -287,3 +287,16 @@ int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char 
     }
     return 0;
 }
+
+int withdraw_send(int fd, char id[]){
+    char msg[12];
+    memset(msg,0,12);
+    sprintf(msg, "WITHDRAW %s \n", id);
+    write(fd, msg, 12);
+    return 0;
+}
+
+int withdraw_rcv(struct node_info* nodeinfo, char id[]){
+    removeRoute(nodeinfo->rout_table,id);
+    return 0;
+}

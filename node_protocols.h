@@ -59,3 +59,9 @@ int content_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char or
 
 //receive NOCONTENT, update routing table and spread across network or through routing table entry
 int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char origin[], char name[]);
+
+//sends withdraw msg
+int withdraw_send(int fd, char id[]);
+
+//removes all instances of id in routing table
+int withdraw_rcv(struct node_info* nodeinfo, char id[]);
