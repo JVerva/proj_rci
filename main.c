@@ -266,6 +266,17 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
             perror("read error");
         }else if(n == 0){
             //contacts socket is closed
+            //take it out of routing table
+            removeRoute(node_info->rout_table, contact->id);
+            //send withdraw msg
+            if(strcmp(node_info->ext->id,contact->id)!=0){
+                withdraw_send(node_info->ext->fd,contact->id);
+            }
+            for(Contact aux = node_info->intr; aux != NULL; aux = aux->next){
+                if(strcmp(aux->id, contact->id)!=0){
+                    withdraw_send(aux->fd, contact->id);
+                }
+            }
             //if it is extern contact, connect to backup
             if(strcmp(node_info->ext->id,contact->id)==0){
                 FD_CLR(node_info->ext->fd, rfds);
@@ -320,6 +331,13 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                         return -1;
                     }
                 break;
+                case 2:
+                    //withdraw
+                    if(withdraw_rcv(node_info, args[0])!=0){
+                        fprintf(stderr, "error recieving withdraw msg.\n");
+                        return -1;
+                    }
+                break;
                 case 3:
                     //query
                     query_rcv(node_info, contact, args[0], args[1], args[2]);
@@ -331,7 +349,6 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                 case 5:
                     //nocontent
                     nocontent_rcv(node_info, contact, args[0], args[1], args[2]);
-                break;
                 case -1:
                     //error
                     fprintf(stderr, "error: message does not correspond to node protocol.\n");
