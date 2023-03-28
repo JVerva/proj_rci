@@ -162,6 +162,9 @@ int query_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char orig
     Contact route_dest, aux;
 
     //check input error|||||||||||||||||||||||
+    if(verifyid(dest)!=0) return -1;
+    if(verifyid(origin)!=0) return -1;
+    if(strcmp(dest, origin) == 0) return -1;
 
     //update routing table of sender
     if(checkRoute(nodeinfo->rout_table, origin) == NULL){//talvez apagar a entrada que ja havia e por esta atualizada|||||||(ja esta)||||||||
