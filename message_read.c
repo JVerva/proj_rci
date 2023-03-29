@@ -1,7 +1,7 @@
 int read_stream(char* stored, char *read){
     
 
-    //stored is double the size of read
+    //stored is double the size of read|||||||||||||||||||
     strcat(stored, read);
 
 
@@ -13,17 +13,28 @@ int process_stream(char* stored, char* msg){
     int i;
     int MAX_MSG = 116;
 
-    memcpy(buffer, stored, sizeof(buffer));
+    //msg é do tamanho de stored e os bytes que sao lidos têm metade de stored||||||||||||||||||||
 
-/*
-    msg = strtok(buffer, "\n");
-    if(strlen(msg) > MAX_MSG || msg[strlen(msg)-1] != "\n"){
-        //discard
-        memmove(stored, stored[i], strlen(msg)-(i+1));
+
+    while(reading){
+        memcpy(buffer, stored, sizeof(buffer));
+ 
+        msg = strtok(buffer, "\n");
+
+        if(strlen(msg) > MAX_MSG){//message is too big to be a legitimate message
+            //discard
+            memmove(stored, stored[strlen(msg)], sizeof(stored)-strlen(msg));
+        }
+        else if(msg[strlen(msg)-1] != "\n"){//message is not complete
+            return -1;
+        }
+        else{
+            return 0;
+        }
 
     }
-*/
 
+/*
     while(reading){
         if(stored[0] == "\0"){
             //nothing to read
@@ -48,4 +59,6 @@ int process_stream(char* stored, char* msg){
             memmove(stored, stored[i], sizeof(buffer)-MAX_MSG);
         }
     }
+*/
+
 }
