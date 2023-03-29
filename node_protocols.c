@@ -104,16 +104,18 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
         return -1;
     }
 
+    if(node->ext!=NULL){
     //check if message is coming from ext neighbor, else do nothing, a bad behaving node may have sent the message instead
-    if(strcmp(node->ext->id, id_sender) != 0){
+        if(strcmp(node->ext->id, id_sender) != 0){
         return -1;
-    }else{
-        //update backup neighbor contact information
-        fillContact(node->bck, id_rcv, ip, port);
-        node->bck->fd = -1; //|||||||||||
-
-        //UPDATE ROUTING TABLE?|||||||||||||
+        }
     }
+    //update backup neighbor contact information
+    fillContact(node->bck, id_rcv, ip, port);
+    node->bck->fd = -1; //|||||||||||
+
+    //UPDATE ROUTING TABLE?|||||||||||||
+    
     return 0;
 }
 

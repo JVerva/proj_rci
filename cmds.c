@@ -203,19 +203,58 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
             close(fd_tcp);
             return -1;
         }
-        //set node info extern
-        FD_SET(new_fd, rfds);
-        nodeinfo->ext = createContact();
-        nodeinfo->ext->fd = new_fd;
-        fillContact(nodeinfo->ext,node, t_ip,t_port);
         //send connection message
         new_send(new_fd, id, ip, tcp);
+        //await extern message
+        //create timeout, set time out
+        struct timeval tv;
+        tv.tv_sec = 2;
+        tv.tv_usec = 0;
+        setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+        char buff[128];
+        int n = read(new_fd, buff, sizeof(buff));
+        if(n == -1){
+            perror("error on read");
+            fprintf(stderr, "connecting node did not respond.\n");
+            //unregister node
+            unregisternode(fd_udp, serverinfo, net, id);
+            close(fd_tcp);
+            return -1;
+        }else if(n == 0){
+            fprintf(stderr, "connecting node did not respond.\n");
+            //unregister node
+            unregisternode(fd_udp, serverinfo, net, id);
+            close(fd_tcp);
+            return -1;
+        }else{
+            char **args = (char**)malloc(6*sizeof(char*));
+            n = messagecheck(buff, args);
+            if(n == 1){
+                extern_rcv(nodeinfo, node, args[0], args[1], args[2]);
+                //reset timeout
+                tv.tv_sec = 0;
+                setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+                //set node info extern
+                FD_SET(new_fd, rfds);
+                nodeinfo->ext = createContact();
+                nodeinfo->ext->fd = new_fd;
+                fillContact(nodeinfo->ext,node, t_ip,t_port);
+            }else{
+                fprintf(stderr, "connecting node did not respond acoordingly.\n");
+                //unregister node
+                unregisternode(fd_udp, serverinfo, net, id);
+                close(fd_tcp);
+                free(args);
+                return -1;
+            }
+            free(args);
+        }
     }
     return 0;
 }
 
 //joins node to network.
-int djoin(int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char tcp[], char bootid[], char ip[], char boot_tcp[], struct addrinfo serverinfo,fd_set* rfds){
+int djoin(int fd_tcp, int fd_udp, struct node_info* nodeinfo, char net[], char id[], char ip[], char tcp[], char bootid[], char bootip[], char boottcp[], struct addrinfo serverinfo,fd_set* rfds){
     //verify arguments
     if(verifynet(net)!=0){
         fprintf(stderr, "net id is invaid.\n");
@@ -229,7 +268,7 @@ int djoin(int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char tc
         fprintf(stderr, "boot node id is invaid.\n");
         return -1;
     }
-    //set node info id
+    registernode(fd_udp, serverinfo, net, id, ip, tcp);
     //set node info id
     strcpy(nodeinfo->id,id);
     strcpy(nodeinfo->ip, ip);
@@ -239,19 +278,57 @@ int djoin(int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char tc
     int new_fd;
     //if boot id and id are not same, connect to boot node
     if(strcmp(bootid,id)!=0){
-        new_fd = connecttonode(ip, boot_tcp);
+        new_fd = connecttonode(bootip, boottcp);
         if(new_fd == -1){
             //error connection to boot node
             close(fd_tcp);
             return -1;
         }
-        //set node info extern
-        FD_SET(new_fd, rfds);
-        nodeinfo->ext = createContact();
-        nodeinfo->ext->fd = new_fd;
-        fillContact(nodeinfo->ext,bootid, ip,boot_tcp);
         //send connection message
         new_send(new_fd, id, ip, tcp);
+        //create timeout, set time out
+        struct timeval tv;
+        tv.tv_sec = 2;
+        tv.tv_usec = 0;
+        setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+        char buff[128];
+        int n = read(new_fd, buff, sizeof(buff));
+        if(n == -1){
+            perror("error on read");
+            fprintf(stderr, "connecting node did not respond.\n");
+            //unregister node
+            unregisternode(fd_udp, serverinfo, net, id);
+            close(fd_tcp);
+            return -1;
+        }else if(n == 0){
+            fprintf(stderr, "connecting node did not respond.\n");
+            //unregister node
+            unregisternode(fd_udp, serverinfo, net, id);
+            close(fd_tcp);
+            return -1;
+        }else{
+            char **args = (char**)malloc(6*sizeof(char*));
+            n = messagecheck(buff, args);
+            if(n == 1){
+                extern_rcv(nodeinfo, bootid, args[0], args[1], args[2]);
+                //reset timeout
+                tv.tv_sec = 0;
+                setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+                //set node info extern
+                FD_SET(new_fd, rfds);
+                nodeinfo->ext = createContact();
+                nodeinfo->ext->fd = new_fd;
+                fillContact(nodeinfo->ext, bootid, bootip, boottcp);
+            }else{
+                fprintf(stderr, "connecting node did not respond acoordingly.\n");
+                //unregister node
+                unregisternode(fd_udp, serverinfo, net, id);
+                close(fd_tcp);
+                free(args);
+                return -1;
+            }
+            free(args);
+        }
     }else{//network is empty
         nodeinfo->ext = createContact(); 
         fillContact(nodeinfo->ext,bootid, ip, tcp);

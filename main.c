@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
                             //djoin
                             strcpy(id, args[1]);
                             strcpy(net, args[0]);
-                            if(djoin(fd_udp,node_info, args[0], args[1],port, args[2], args[3], args[4], *node_server, &rfds)==0){
+                            if(djoin(fd_tcp, fd_udp, node_info, id, net, ip ,port, args[2], args[3], args[4], *node_server, &rfds)==0){
                                 joined = 1;
                             }else{
                                 FD_CLR(fd_tcp, &rfds);
