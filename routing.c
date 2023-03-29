@@ -44,8 +44,10 @@ Routing removeRoute(Routing head, char id[]){
             }
             free(front);
         }
-        back = front;
-        front = front->next;
+        if(front != NULL){
+            back = front;
+            front = front->next;
+        }
     }
     return new_head;
 }

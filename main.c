@@ -117,8 +117,12 @@ int main(int argc, char* argv[]){
                         if(joined == 0){
                             //init tcp socket
                             fd_tcp = inittcpsocket(port);
+                            //add tcp socket to file descriptor set
+                            FD_SET(fd_tcp, &rfds);
                             //djoin
-                            if(djoin(fd_udp,node_info, args[0], args[1], args[2], args[3], args[4], *node_server)==0){
+                            strcpy(id, args[1]);
+                            strcpy(net, args[0]);
+                            if(djoin(fd_udp,node_info, args[0], args[1],port, args[2], args[3], args[4], *node_server, &rfds)==0){
                                 joined = 1;
                             }else{
                                 FD_CLR(fd_tcp, &rfds);

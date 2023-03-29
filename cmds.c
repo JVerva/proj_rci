@@ -169,14 +169,12 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
     printf("node inserted.\n");
     //default node info
     nodeinfo->bck = createContact();
-    strcpy(nodeinfo->bck->id,id);
+    fillContact(nodeinfo->bck, id, ip, tcp);
     //check if there are any other nodes in the network
     if(isnetworkempty(node_list)==0){
         //set node info extern
         nodeinfo->ext = createContact(); 
-        strcpy(nodeinfo->ext->id,id);
-        strcpy(nodeinfo->ext->ip,ip);
-        strcpy(nodeinfo->ext->port,tcp);
+        fillContact(nodeinfo->ext, id, ip, tcp);
         printf("first node in the network.\n");
     }else{
         //ask which node you want to connect
@@ -217,7 +215,7 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
 }
 
 //joins node to network.
-int djoin(int fd_tcp, struct node_info* node_info, char net[], char id[], char bootid[], char ip[], char tcp[], struct addrinfo serverinfo){
+int djoin(int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char tcp[], char bootid[], char ip[], char boot_tcp[], struct addrinfo serverinfo,fd_set* rfds){
     //verify arguments
     if(verifynet(net)!=0){
         fprintf(stderr, "net id is invaid.\n");
@@ -232,23 +230,31 @@ int djoin(int fd_tcp, struct node_info* node_info, char net[], char id[], char b
         return -1;
     }
     //set node info id
-    strcpy(node_info->id,id);
+    //set node info id
+    strcpy(nodeinfo->id,id);
+    strcpy(nodeinfo->ip, ip);
+    strcpy(nodeinfo->port, tcp);
+    nodeinfo->bck = createContact();
+    fillContact(nodeinfo->bck, id, ip, tcp);
     int new_fd;
     //if boot id and id are not same, connect to boot node
     if(strcmp(bootid,id)!=0){
-        new_fd = connecttonode(ip, tcp);
+        new_fd = connecttonode(ip, boot_tcp);
         if(new_fd == -1){
             //error connection to boot node
             close(fd_tcp);
             return -1;
         }
-        //set extern node
-        node_info->ext = createContact();
-        fillContact(node_info->ext, bootid, ip, tcp);
+        //set node info extern
+        FD_SET(new_fd, rfds);
+        nodeinfo->ext = createContact();
+        nodeinfo->ext->fd = new_fd;
+        fillContact(nodeinfo->ext,bootid, ip,boot_tcp);
         //send connection message
-        char msg[30];
-        sscanf(msg, "NEW %s %s %s", id, ip, tcp);
-        write(new_fd, msg ,30);
+        new_send(new_fd, id, ip, tcp);
+    }else{//network is empty
+        nodeinfo->ext = createContact(); 
+        fillContact(nodeinfo->ext,bootid, ip, tcp);
     }
     return 0;
 }
