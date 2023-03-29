@@ -15,6 +15,15 @@ int process_stream(char* stored, char* msg){
 
     memcpy(buffer, stored, sizeof(buffer));
 
+/*
+    msg = strtok(buffer, "\n");
+    if(strlen(msg) > MAX_MSG || msg[strlen(msg)-1] != "\n"){
+        //discard
+        memmove(stored, stored[i], strlen(msg)-(i+1));
+
+    }
+*/
+
     while(reading){
         if(stored[0] == "\0"){
             //nothing to read
