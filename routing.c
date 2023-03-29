@@ -28,7 +28,7 @@ Routing addRoute(Routing head, char dest[], Contact route){
 
 Routing removeRoute(Routing head, char id[]){
     Routing front = head, back = NULL, new_head = head;
-
+    printf("running\n");
     while(front != NULL){
         //if deprecated is found
         if(strcmp(front->dest, id) == 0 || strcmp(front->route->id, id) == 0){
@@ -43,11 +43,10 @@ Routing removeRoute(Routing head, char id[]){
                 back->next = front->next;
             }
             free(front);
+            break;
         }
-        if(front != NULL){
-            back = front;
-            front = front->next;
-        }
+        back = front;
+        front = front->next;
     }
     return new_head;
 }
