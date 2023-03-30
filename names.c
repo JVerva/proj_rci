@@ -72,8 +72,6 @@ int checkName(Name head, char file[]){
     return 1;
 }
 
-
-
 void show_names(Name head){
     Name aux = head;
 

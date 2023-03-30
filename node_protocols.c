@@ -104,16 +104,18 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
         return -1;
     }
 
+    if(node->ext!=NULL){
     //check if message is coming from ext neighbor, else do nothing, a bad behaving node may have sent the message instead
-    if(strcmp(node->ext->id, id_sender) != 0){
+        if(strcmp(node->ext->id, id_sender) != 0){
         return -1;
-    }else{
-        //update backup neighbor contact information
-        fillContact(node->bck, id_rcv, ip, port);
-        node->bck->fd = -1; //|||||||||||
-
-        //UPDATE ROUTING TABLE?|||||||||||||
+        }
     }
+    //update backup neighbor contact information
+    fillContact(node->bck, id_rcv, ip, port);
+    node->bck->fd = -1; //|||||||||||
+
+    //UPDATE ROUTING TABLE?|||||||||||||
+    
     return 0;
 }
 
@@ -292,6 +294,28 @@ int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char 
         }else{
             //send NOCONTENT through route
             nocontent_send(route_dest->fd, dest, origin, name);
+        }
+    }
+    return 0;
+}
+
+int withdraw_send(int fd, char id[]){
+    char msg[20];
+    memset(msg,0,20);
+    sprintf(msg, "WITHDRAW %s \n", id);
+    write(fd, msg, 20);
+    return 0;
+}
+
+int withdraw_rcv(struct node_info* nodeinfo, Contact sender, char id[]){
+    nodeinfo->rout_table = removeRoute(nodeinfo->rout_table,id);
+    //send to all neighbors
+    if(strcmp(nodeinfo->ext->id,sender->id)!=0){
+        withdraw_send(nodeinfo->ext->fd, id);
+    }
+    for(Contact aux = nodeinfo->intr; aux!=NULL; aux = aux->next){
+        if(strcmp(aux->id,sender->id)!=0){
+            withdraw_send(aux->fd, id);
         }
     }
     return 0;
