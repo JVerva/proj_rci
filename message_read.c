@@ -1,64 +1,34 @@
-int read_stream(char* stored, char *read){
-    
-
-    //stored is double the size of read|||||||||||||||||||
-    strcat(stored, read);
-
-
-}
-
 int process_stream(char* stored, char* msg){
-    char buffer[240];
-    int reading = 1;
-    int i;
-    int MAX_MSG = 116;
+    char buffer[100];
+    char *aux;
+    //int MAX_MSG = 117;
+    int max_msg = 10;
 
-    //msg é do tamanho de stored e os bytes que sao lidos têm metade de stored||||||||||||||||||||
+    memcpy(buffer, stored, 100);
 
-
-    while(reading){
-        memcpy(buffer, stored, sizeof(buffer));
- 
-        msg = strtok(buffer, "\n");
-
-        if(strlen(msg) > MAX_MSG){//message is too big to be a legitimate message
-            //discard
-            memmove(stored, stored[strlen(msg)], sizeof(stored)-strlen(msg));
-        }
-        else if(msg[strlen(msg)-1] != "\n"){//message is not complete
-            return -1;
-        }
-        else{
-            return 0;
-        }
-
+    if(strlen(stored) != 0){
+        aux = strtok(buffer, "\n");
+        strcpy(msg, aux);
+    }
+    else{
+        return -1;
     }
 
-/*
-    while(reading){
-        if(stored[0] == "\0"){
-            //nothing to read
-            return -1;
-        }
-        for(i = 0; i < MAX_MSG-1; i++){
-            if(stored[i] == "\n"){
-                //message complete and ready to be read
-                msg = strtok(buffer, "\n");
-                //remove read msg from stored
-                memmove(stored, stored[i], strlen(msg)-(i+1));
-                return 0;
-            }
-            else if(stored[i] == "\0"){
-                //message not yet complete
-                return -1;
-            }
-        }
-        if(i > MAX_MSG-1){
-            //maximum message lenght is 116 so this cant be a legitimate message
-            //remove confirmed trash from stored
-            memmove(stored, stored[i], sizeof(buffer)-MAX_MSG);
-        }
+    if(strlen(msg) > max_msg-1){
+        //discard
+        memset(stored, '\0', 100);
     }
-*/
+    else if(strlen(msg) < strlen(stored)){  //found a complete message with reasonable size
+        //reattach \n symbol to msg (strtok removed it)
+        printf("papawk,\n");
+        strcat(msg, "\n");
+        //shift left in stored
+        memmove(stored, &stored[strlen(msg)], 100-strlen(msg));
 
+        return 0;
+    }
+    else if(strlen(msg) == strlen(stored)){ //incomplete message
+        //wait for complete??||||||||||||||
+    }
+    return -1;
 }
