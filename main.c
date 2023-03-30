@@ -1,5 +1,4 @@
 #include <sys/types.h>
-
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netdb.h>
@@ -118,8 +117,12 @@ int main(int argc, char* argv[]){
                         if(joined == 0){
                             //init tcp socket
                             fd_tcp = inittcpsocket(port);
+                            //add tcp socket to file descriptor set
+                            FD_SET(fd_tcp, &rfds);
                             //djoin
-                            if(djoin(fd_udp,node_info, args[0], args[1], args[2], args[3], args[4], *node_server)==0){
+                            strcpy(id, args[1]);
+                            strcpy(net, args[0]);
+                            if(djoin(fd_tcp, fd_udp, node_info, id, net, ip ,port, args[2], args[3], args[4], *node_server, &rfds)==0){
                                 joined = 1;
                             }else{
                                 FD_CLR(fd_tcp, &rfds);
@@ -175,6 +178,12 @@ int main(int argc, char* argv[]){
                         freeaddrinfo(node_server);
                         free(args);
                         return 0;
+                    break;
+                    case 11:
+                        //cr clear routing
+                        closeRoutingTable(node_info->rout_table);
+                        node_info->rout_table = NULL;
+                    break;
                     default:
                         fprintf(stderr, "command not yet implemented.\n");
                     break;
@@ -186,7 +195,9 @@ int main(int argc, char* argv[]){
                 checknewconnection(fd_tcp, node_info, &aux_rfds, &rfds);
                 //any neighbor ready
                 //check extern node
-                handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
+                if(strcmp(node_info->ext->id, node_info->id) != 0){
+                    handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
+                }
                 //check inter nodes
                 contact_aux = node_info->intr;
                 while(contact_aux != NULL){
@@ -266,6 +277,19 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
             perror("read error");
         }else if(n == 0){
             //contacts socket is closed
+            //take it out of routing table
+            if(node_info->rout_table!=NULL){
+                node_info->rout_table = removeRoute(node_info->rout_table, contact->id);
+                //send withdraw msg
+                if(strcmp(node_info->ext->id,contact->id)!=0){
+                    withdraw_send(node_info->ext->fd,contact->id);
+                }
+                for(Contact aux = node_info->intr; aux != NULL; aux = aux->next){
+                    if(strcmp(aux->id, contact->id)!=0){
+                        withdraw_send(aux->fd, contact->id);
+                    }
+                }
+            }
             //if it is extern contact, connect to backup
             if(strcmp(node_info->ext->id,contact->id)==0){
                 FD_CLR(node_info->ext->fd, rfds);
@@ -317,6 +341,13 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                     //extern
                     if(extern_rcv(node_info, contact->id, args[0], args[1], args[2])!=0){
                         fprintf(stderr, "error recieving extern msg.\n");
+                        return -1;
+                    }
+                break;
+                case 2:
+                    //withdraw
+                    if(withdraw_rcv(node_info, contact, args[0])!=0){
+                        fprintf(stderr, "error recieving withdraw msg.\n");
                         return -1;
                     }
                 break;

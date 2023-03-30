@@ -10,56 +10,63 @@
 #include <string.h>
 #include <errno.h>
 
-#define PORT "59002"
+#define PORT "59001"
 
 int main(){
 
-    int newfd, fd, errcode;
-    ssize_t n;
-    socklen_t addrlen;
+    int status;
     struct addrinfo hints, *res;
-    struct sockaddr_in addr;
-    char buffer[128];
+    int sockfd;
 
-    fd_set rfds;
-
-    fd=socket(AF_INET, SOCK_STREAM,0);
-    if(fd==-1){
-        printf("socket.\n");
-         /*error*/ exit(1);
-    }
-
-    memset(&hints,0,sizeof hints);
+    //fill hints
+    memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    
-    errcode=getaddrinfo("127.0.0.1", PORT, &hints, &res);
-    if(errcode!=0){
-        printf("sddrinfo.\n");
-         /*error*/ exit(1);
+    hints.ai_flags = AI_PASSIVE;
+
+    //get address info
+    if((status = getaddrinfo(NULL, PORT, &hints, &res)) != 0){
+        fprintf(stderr, "getaddrinfo error: %d\n", status);
+        exit(1);
     }
 
-    n=connect(fd,res->ai_addr,res->ai_addrlen);
-    if(n==-1){
-        perror("connect.\n");
-         /*error*/ exit(1);
+    //create socket
+    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+
+    //bind socket to port
+    bind(sockfd, res->ai_addr, res->ai_addrlen);
+
+    //listen for incoming connections
+    listen(sockfd, 5);
+
+    int status_udp;
+    struct addrinfo hints_udp;
+    int sockfd_udp;
+
+    //fill hints
+    memset(&hints_udp, 0, sizeof hints_udp);
+    hints_udp.ai_family = AF_INET;
+    hints_udp.ai_socktype = SOCK_DGRAM;
+
+    //get address info
+    if((status = getaddrinfo("193.136.138.142", "59000", &hints_udp, &res)) != 0){
+        fprintf(stderr, "getaddrinfo error: %d\n", status);
+        exit(1);
     }
 
-    while (1){
-        scanf("%s",buffer);
-        n=write(fd,buffer, 128);
-        if(n==-1)/*error*/ exit(1);
+    //create socket
+    sockfd_udp = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+
+    char cmd[40] = {"\0"};
+    char buff[256] = {"\0"};
+    memset(buff,0,256);
+    memset(cmd,0,40);
+    sprintf(cmd, "REG %s %s %s %s", "032", "00", "192.168.1.100", PORT);
+    int n = sendto(sockfd_udp, cmd , 40 ,0,res->ai_addr, res->ai_addrlen);
+    printf("%d\n",n);
+
+    while(1){
+
     }
-    
-
-    //n=read(fd,buffer,128);
-    //if(n==-1)/*error */exit(1);
-    //write(1,"echo: ", 6); write(1,buffer,n);
-
-    freeaddrinfo(res);
-    close(fd);
-
     return 0;
-
-    
 }

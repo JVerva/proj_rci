@@ -4,6 +4,8 @@
         "contact.h": "c",
         "utils.h": "c",
         "stdlib.h": "c",
-        "routing.h": "c"
+        "routing.h": "c",
+        "cmds.h": "c",
+        "sstream": "c"
     }
 }
