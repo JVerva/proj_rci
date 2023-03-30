@@ -5,7 +5,6 @@
         "utils.h": "c",
         "stdlib.h": "c",
         "routing.h": "c",
-        "cmds.h": "c",
-        "sstream": "c"
+        "string.h": "c"
     }
 }

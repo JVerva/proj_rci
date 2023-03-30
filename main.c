@@ -353,7 +353,10 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                 break;
                 case 3:
                     //query
-                    query_rcv(node_info, contact, args[0], args[1], args[2]);
+                    if(query_rcv(node_info, contact, args[0], args[1], args[2])!=0){
+                        fprintf(stderr, "error in query msg receive protocol.\n");
+                        return -1;
+                    }
                 break;
                 case 4:
                     //content
@@ -365,11 +368,11 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                 break;
                 case -1:
                     //error
-                    fprintf(stderr, "error: message does not correspond to node protocol.\n");
+                    fprintf(stderr, "error: message does not correspond to any node protocol.\n");
                     return -1;
                 break;
                 default:
-                    fprintf(stderr, "error: command not yet implemented.\n");
+                    fprintf(stderr, "error: message does not correspond to any node protocol.\n");
                     return -1;
                 break;
 
