@@ -1,8 +1,19 @@
+int read_stream(char* stored, char *read){
+    
+
+    //stored is double the size of read|||||||||||||||||||
+    strcat(stored, read);
+
+
+}
+
 int process_stream(char* stored, char* msg){
     char buffer[100];
     char *aux;
     //int MAX_MSG = 117;
     int max_msg = 10;
+
+    //buffer must be same size as stored, 
 
     memcpy(buffer, stored, 100);
 
