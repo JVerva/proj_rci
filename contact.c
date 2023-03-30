@@ -7,6 +7,7 @@ Contact createContact(){
     strcpy(temp->id, "-1");
     strcpy(temp->port, "-1");
     strcpy(temp->ip, "-1");
+    memset(temp->stored, '\0', 2*(MAX_MSG+1));
     temp->fd = -1;
     temp->next = NULL;// make next point to NULL
     return temp;//return the new Contact

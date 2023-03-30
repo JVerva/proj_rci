@@ -4,11 +4,14 @@
 #include <unistd.h>
 #include "utils.h"
 
+#define MAX_MSG 117
+
 struct contact{
     char id[3];
     int fd;
     char ip[17];
     char port[6];
+    char stored[2*(MAX_MSG+1)];
     struct contact *next;
 };
 

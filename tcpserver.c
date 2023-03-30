@@ -66,7 +66,7 @@ int main(){
     printf("%d\n",n);
 
     while(1){
-
+        
     }
     return 0;
 }

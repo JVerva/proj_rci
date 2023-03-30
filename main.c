@@ -17,6 +17,8 @@ int initudpsocket(char[], char[], struct addrinfo**);
 int checkfornode(char[], char[]);
 int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds);
 int checknewconnection(int fd_tcp, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds);
+int process_stream(char* stored, char* msg);
+
 
 char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
@@ -268,11 +270,11 @@ int initudpsocket(char ip[], char port[], struct addrinfo **res){
 }
 
 int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds){
-    char buffer[128];
+    char buffer[MAX_MSG+1];
     int flags = 0;
-    memset(buffer, 0, 128);
+    memset(buffer, 0, MAX_MSG+1);
     if(FD_ISSET(contact->fd, aux_rfds)){
-        int n = recv(contact->fd,buffer,128,flags);
+        int n = recv(contact->fd,buffer,MAX_MSG+1,flags);
         if(n == -1){
             perror("read error");
         }else if(n == 0){
@@ -327,57 +329,62 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                 node_info->intr = removeContact(node_info->intr, contact);
             }
         }else{
-            char **args = (char**)malloc(6*sizeof(char*));
-            int msg = messagecheck(buffer, args);
-            switch(msg){
-                case 0:
-                    //new
-                    if(new_rcv(node_info, contact, args[0], args[1], args[2])!=0){
-                        fprintf(stderr, "error recieving new msg.\n");
+            //handle message
+            strcat(contact->stored, buffer);
+            while(process_stream(contact->stored, buffer) == 0){
+                printf("%s\n", buffer);//|||||||||||||||||||||||||||||||||
+                char **args = (char**)malloc(6*sizeof(char*));
+                int msg = messagecheck(buffer, args);
+                switch(msg){
+                    case 0:
+                        //new
+                        if(new_rcv(node_info, contact, args[0], args[1], args[2])!=0){
+                            fprintf(stderr, "error recieving new msg.\n");
+                            return -1;
+                        }
+                    break;
+                    case 1:
+                        //extern
+                        if(extern_rcv(node_info, contact->id, args[0], args[1], args[2])!=0){
+                            fprintf(stderr, "error recieving extern msg.\n");
+                            return -1;
+                        }
+                    break;
+                    case 2:
+                        //withdraw
+                        if(withdraw_rcv(node_info, contact, args[0])!=0){
+                            fprintf(stderr, "error recieving withdraw msg.\n");
+                            return -1;
+                        }
+                    break;
+                    case 3:
+                        //query
+                        if(query_rcv(node_info, contact, args[0], args[1], args[2])!=0){
+                            fprintf(stderr, "error in query msg receive protocol.\n");
+                            return -1;
+                        }
+                    break;
+                    case 4:
+                        //content
+                        content_rcv(node_info, contact, args[0], args[1], args[2]);
+                    break;
+                    case 5:
+                        //nocontent
+                        nocontent_rcv(node_info, contact, args[0], args[1], args[2]);
+                    break;
+                    case -1:
+                        //error
+                        fprintf(stderr, "error: message does not correspond to any node protocol.\n");
                         return -1;
-                    }
-                break;
-                case 1:
-                    //extern
-                    if(extern_rcv(node_info, contact->id, args[0], args[1], args[2])!=0){
-                        fprintf(stderr, "error recieving extern msg.\n");
+                    break;
+                    default:
+                        fprintf(stderr, "error: message does not correspond to any node protocol.\n");
                         return -1;
-                    }
-                break;
-                case 2:
-                    //withdraw
-                    if(withdraw_rcv(node_info, contact, args[0])!=0){
-                        fprintf(stderr, "error recieving withdraw msg.\n");
-                        return -1;
-                    }
-                break;
-                case 3:
-                    //query
-                    if(query_rcv(node_info, contact, args[0], args[1], args[2])!=0){
-                        fprintf(stderr, "error in query msg receive protocol.\n");
-                        return -1;
-                    }
-                break;
-                case 4:
-                    //content
-                    content_rcv(node_info, contact, args[0], args[1], args[2]);
-                break;
-                case 5:
-                    //nocontent
-                    nocontent_rcv(node_info, contact, args[0], args[1], args[2]);
-                break;
-                case -1:
-                    //error
-                    fprintf(stderr, "error: message does not correspond to any node protocol.\n");
-                    return -1;
-                break;
-                default:
-                    fprintf(stderr, "error: message does not correspond to any node protocol.\n");
-                    return -1;
-                break;
+                    break;
 
+                }
+                free(args);
             }
-            free(args);
         }
     }
     return 0;
@@ -401,4 +408,39 @@ int checknewconnection(int fd_tcp, struct node_info* node_info, fd_set* aux_rfds
         }
     }
     return 0;
+}
+
+
+int process_stream(char stored[], char msg[]){
+    char buffer[2*(MAX_MSG+1)];
+    char *aux;
+
+    //buffer must be same size as stored, 
+
+    memcpy(buffer, stored, 2*(MAX_MSG+1));
+
+    if(strlen(stored) != 0){
+        aux = strtok(buffer, "\n");
+        strcpy(msg, aux);
+    }
+    else{
+        return -1;
+    }
+
+    if(strlen(msg) > MAX_MSG-1){
+        //discard
+        memset(stored, '\0', 2*(MAX_MSG+1));
+    }
+    else if(strlen(msg) < strlen(stored)){  //found a complete message with reasonable size
+        //reattach \n symbol to msg (strtok removed it)
+        strcat(msg, "\n");
+        //shift left in stored
+        memmove(stored, &stored[strlen(msg)], 2*(MAX_MSG+1)-strlen(msg));
+
+        return 0;
+    }
+    else if(strlen(msg) == strlen(stored)){ //incomplete message
+        //wait for complete??||||||||||||||
+    }
+    return -1;
 }
