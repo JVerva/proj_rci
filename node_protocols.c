@@ -297,10 +297,10 @@ int nocontent_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char 
 }
 
 int withdraw_send(int fd, char id[]){
-    char msg[12];
-    memset(msg,0,12);
+    char msg[20];
+    memset(msg,0,20);
     sprintf(msg, "WITHDRAW %s \n", id);
-    write(fd, msg, 12);
+    write(fd, msg, 20);
     return 0;
 }
 
