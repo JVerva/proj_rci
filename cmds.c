@@ -230,7 +230,15 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
             char **args = (char**)malloc(6*sizeof(char*));
             n = messagecheck(buff, args);
             if(n == 1){
-                extern_rcv(nodeinfo, node, args[0], args[1], args[2]);
+                n = extern_rcv(nodeinfo, node, args[0], args[1], args[2]);
+                if(n==-1){
+                    fprintf(stderr, "connecting node did not respond acoordingly.\n");
+                    //unregister node
+                    unregisternode(fd_udp, serverinfo, net, id);
+                    close(fd_tcp);
+                    free(args);
+                    return -1;
+                }
                 //reset timeout
                 tv.tv_sec = 0;
                 setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
@@ -364,14 +372,20 @@ int show_topology(struct node_info* node){
     printf(" %s%s%-10s%s | %s%-7s%s | %s%-17s%s | %s%s%s%s\n", BOLD, YEL, "NEIGHBOR", WHI, YEL, "ID", WHI, YEL, "IP", WHI, YEL, "PORT", NORM, NBOLD);
     printf("---------------------------------------------------------\n");
     
-    if(strcmp(node->ext->id, node->id)==0){
+    if(node->ext == NULL){
+        printf("*%-10s | %-7s | %-17s | %s\n", "EXT", "--", "--", "--");
+    }
+    else if(strcmp(node->ext->id, node->id)==0){
         printf("*%-10s | %-7s | %-17s | %s\n", "EXT", node->id, "self", "self");
     }else{
         printf("*%-10s | %-7s | %-17s | %s\n", "EXT", node->ext->id, node->ext->ip, node->ext->port);
     }
     printf("---------------------------------------------------------\n");
     
-    if(strcmp(node->bck->id, node->id)==0){
+    if(node->bck == NULL){
+        printf("*%-10s | %-7s | %-17s | %s\n", "EXT", "--", "--", "--");
+    }
+    else if(strcmp(node->bck->id, node->id)==0){
         printf("*%-10s | %-7s | %-17s | %s\n", "BCK", node->id, "self", "self");
     }else{
         printf("*%-10s | %-7s | %-17s | %s\n", "BCK", node->bck->id, node->bck->ip, node->bck->port);
@@ -386,6 +400,7 @@ int show_topology(struct node_info* node){
         while(aux != NULL){
             if(strcmp(aux->id, "-1") != 0){
                 printf(" %-10s | %-7s | %-17s | %s\n", " ", aux->id, aux->ip, aux->port);
+                fflush(stdout);
             }
             aux = aux->next;     
         }

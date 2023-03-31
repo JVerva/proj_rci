@@ -16,8 +16,8 @@ struct node_info* initNode_info(){
 }
 
 void closeNode_info(struct node_info *node){
-    removeContact(node->bck,node->bck);
-    removeContact(node->ext,node->ext);
+    node->bck = removeContact(node->bck,node->bck);
+    node->ext = removeContact(node->ext,node->ext);
     closeContacts(node->intr);
     closeNames(node->names);
     closeRoutingTable(node->rout_table);

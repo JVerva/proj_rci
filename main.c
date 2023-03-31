@@ -410,7 +410,6 @@ int checknewconnection(int fd_tcp, struct node_info* node_info, fd_set* aux_rfds
     return 0;
 }
 
-
 int process_stream(char stored[], char msg[]){
     char buffer[2*(MAX_MSG+1)];
     char *aux;
