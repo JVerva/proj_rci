@@ -28,7 +28,6 @@ int verifyid(char* id){
     return 0;
 }
 
-//check if node already exists in network, node list is the list of nodes returned by network, returns 1 if it already exists
 int checkfornode(char node_id[], char node_list[]){
     char *temp = strdup(node_list);
     //divide buffer into tokens
@@ -105,12 +104,21 @@ int connecttonode(char *t_ip, char *t_port){
     
     int fd_tcp = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
+    struct timeval tv;
+    tv.tv_sec = 4;
+    tv.tv_usec = 0;
+    setsockopt(fd_tcp, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
+
     n=connect(fd_tcp,res->ai_addr,res->ai_addrlen);
     if(n==-1){
         perror("error connecting to node");
         freeaddrinfo(res);
         return -1;
     }
+
+    //reset timeout
+    tv.tv_sec = 0;
+    setsockopt(fd_tcp, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
     printf("connected to node sucessfully.\n");
 
@@ -184,4 +192,38 @@ int unregisternode(int fd_udp,struct addrinfo serverinfo, char* net, char* id){
     }
     printf("node left.\n");
     return 0;
+}
+
+int readwithtimeout(int fd, int time, char buff[], int size){
+    //create timeout, set time out
+    struct timeval tv;
+    tv.tv_sec = time;
+    tv.tv_usec = 0;
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    int n = read(fd, buff, size);
+    //reset timeout
+    tv.tv_sec = 0;
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    return n;
+}
+
+int chooserandnode(char node_list[], char node_id[]){
+    char* temp = strdup(node_list);
+    char* token = strtok(temp, "\n");
+    int i, a;
+
+    for(i=0; token != NULL; i++ ) {
+        token = strtok(NULL, "\n");
+    }
+
+    a = rand() % (i-1) +1;
+    strcpy(temp, node_list);
+    token = strtok(temp, "\n");
+    for(i=0; i<a; i++ ){
+        token = strtok(NULL, "\n");
+    }
+    strcpy(node_id, strtok(token, " "));
+    free(temp);
+    return 1;
+
 }

@@ -7,16 +7,29 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
+#include <signal.h>
 #include <arpa/inet.h>
 #include "cmds.h"
 #include "utils.h"
 
+//create a tcp socket, bind to port and listen for incoming connections
+//input is the desired tcp port
+//returns the fd for the created socket
+int inittcpsocket(char port[]);
 
-int inittcpsocket(char[]);
+//create an udp socket 
+//input is the desired udp port
+//returns the fd for the created socket
 int initudpsocket(char[], char[], struct addrinfo**);
-int checkfornode(char[], char[]);
+
+//handle any possible interaction with an estabilished neighbor
 int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds);
+
+//accept new connections and setup the new neighbor status
 int checknewconnection(int fd_tcp, struct node_info* node_info, fd_set* aux_rfds, fd_set* rfds);
+
+//receive data from socket and separate into messages ending in \n
 int process_stream(char* stored, char* msg);
 
 
@@ -24,6 +37,11 @@ char DEFAULT_IP[] = {"193.136.138.142"};
 char DEFAULT_PORT[] = {"59000"};
 
 int main(int argc, char* argv[]){
+    //ignore sigpipe errors
+    struct sigaction act;
+    memset(&act,0,sizeof act);
+    act.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &act,NULL);
     char net[4] = {"-1"};
     char id[3] = {"-1"};
     char *reg_ip;
@@ -31,6 +49,7 @@ int main(int argc, char* argv[]){
     Contact contact_aux = NULL;
     Contact contact_temp = NULL;
     int joined = 0;
+    srand(time(NULL));
 
     //get arguments
     if(argc != 5 && argc != 3){
@@ -75,7 +94,7 @@ int main(int argc, char* argv[]){
         //use auxiliar as not to set everything every iteration
         aux_rfds = rfds;
 
-        counter = select(fd_udp+10, &aux_rfds, NULL, NULL, NULL);
+        counter = select(FD_SETSIZE, &aux_rfds, NULL, NULL, NULL);
 
         if(counter<=0){
             perror("select error");
@@ -124,7 +143,7 @@ int main(int argc, char* argv[]){
                             //djoin
                             strcpy(id, args[1]);
                             strcpy(net, args[0]);
-                            if(djoin(fd_tcp, fd_udp, node_info, id, net, ip ,port, args[2], args[3], args[4], *node_server, &rfds)==0){
+                            if(djoin(fd_tcp, fd_udp, node_info, net, id, ip ,port, args[2], args[3], args[4], *node_server, &rfds)==0){
                                 joined = 1;
                             }else{
                                 FD_CLR(fd_tcp, &rfds);
@@ -198,7 +217,12 @@ int main(int argc, char* argv[]){
                 //any neighbor ready
                 //check extern node
                 if(strcmp(node_info->ext->id, node_info->id) != 0){
-                    handlecontact(node_info->ext, node_info, &aux_rfds, &rfds);
+                    if(handlecontact(node_info->ext, node_info, &aux_rfds, &rfds)==-2){
+                        FD_CLR(fd_tcp, &rfds);
+                        FD_CLR(node_info->ext->fd, &rfds);
+                        leave(fd_udp, fd_tcp, net, id, &node_info, *node_server, &rfds);
+                        joined = 0;
+                    }
                 }
                 //check inter nodes
                 contact_aux = node_info->intr;
@@ -214,7 +238,7 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
-//create a tcp socket, bind to port and listen for incoming connections
+
 int inittcpsocket(char port[]){
     int status;
     struct addrinfo hints, *res;
@@ -246,7 +270,7 @@ int inittcpsocket(char port[]){
     return sockfd;
 }
 
-//create a udp socket
+
 int initudpsocket(char ip[], char port[], struct addrinfo **res){
     int status;
     struct addrinfo hints;
@@ -312,12 +336,40 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
                     int new_fd = connecttonode(node_info->bck->ip, node_info->bck->port);
                     if(new_fd==-1){
                         fprintf(stderr, "failed to connect to back up.\n");
-                        return -1;
-                    }
-                    FD_SET(new_fd, rfds);
-                    node_info->ext->fd = new_fd;
-                    fillContact(node_info->ext, node_info->bck->id, node_info->bck->ip, node_info->bck->port);         
+                        return -2;
+                    }        
                     new_send(new_fd, node_info->id, node_info->ip, node_info->port);
+                    char buff[128];
+                    int n = readwithtimeout(new_fd, 2, buff, 128);
+                    if(n == -1){
+                        perror("error on read");
+                        fprintf(stderr, "connecting node did not respond.\n");
+                        return -2;
+                    }else if(n == 0){
+                        fprintf(stderr, "connecting node did not respond.\n");
+                        return -2;
+                    }else{
+                        char **args = (char**)malloc(6*sizeof(char*));
+                        n = messagecheck(buff, args);
+                        if(n == 1){
+                            //set node info extern
+                            node_info->ext = createContact();
+                            node_info->ext->fd = new_fd;
+                            fillContact(node_info->ext,node_info->bck->id, node_info->bck->ip, node_info->bck->port);
+                            n = extern_rcv(node_info, node_info->bck->id, args[0], args[1], args[2]);
+                            if(n==-1){
+                                fprintf(stderr, "connecting node did not respond acoordingly.\n");
+                                free(args);
+                                return -2;
+                            }
+                            FD_SET(new_fd, rfds);
+                        }else{
+                            fprintf(stderr, "connecting node did not respond acoordingly.\n");
+                            free(args);
+                            return -2;
+                        }
+                        free(args);
+                    }
                 }
                 //send extern message to all intern nodes
                 for(Contact aux = node_info->intr; aux != NULL; aux = aux->next){
@@ -332,7 +384,6 @@ int handlecontact(Contact contact, struct node_info* node_info, fd_set* aux_rfds
             //handle message
             strcat(contact->stored, buffer);
             while(process_stream(contact->stored, buffer) == 0){
-                printf("%s\n", buffer);//|||||||||||||||||||||||||||||||||
                 char **args = (char**)malloc(6*sizeof(char*));
                 int msg = messagecheck(buffer, args);
                 switch(msg){
@@ -401,10 +452,44 @@ int checknewconnection(int fd_tcp, struct node_info* node_info, fd_set* aux_rfds
             return -1;
         }else{
             printf("accepted a connection.\n");
-            //add file descriptor to select checks
-            FD_SET(new_fd, rfds);
             //create new contact with default data (to be filled later)
             node_info->intr = addContact(node_info->intr, "-1", new_fd);
+            //wait for new
+            char buff[128];
+            int n = readwithtimeout(new_fd, 2, buff, 128);
+            if(n == -1){
+                perror("read error");
+                fprintf(stderr, "connecting node did not respond.\n");
+                node_info->intr = removeContact(node_info->intr, getContact(node_info->intr,"-1"));
+                return -1;
+            }else if(n == 0){
+                fprintf(stderr, "connecting node did not respond.\n");
+                node_info->intr = removeContact(node_info->intr, getContact(node_info->intr,"-1"));
+                return -1;
+            }else{
+                char **args = (char**)malloc(6*sizeof(char*));
+                n = messagecheck(buff, args);
+                if(n == 0){
+                    n = new_rcv(node_info, getContact(node_info->intr,"-1"), args[0], args[1], args[2]);
+                    if(n==-1){
+                        fprintf(stderr, "connecting node did not respond acoordingly.\n");
+                        node_info->intr = removeContact(node_info->intr, getContact(node_info->intr,"-1"));
+                        free(args);
+                        return -1;
+                    }
+                    //set node info intern
+                    FD_SET(new_fd, rfds);
+                    
+                }else{
+                    fprintf(stderr, "connecting node did not respond acoordingly.\n");
+                    node_info->intr = removeContact(node_info->intr, getContact(node_info->intr,"-1"));
+                    free(args);
+                    return -1;
+                }
+                free(args);
+            }
+            //add file descriptor to select checks
+            FD_SET(new_fd, rfds);
         }
     }
     return 0;
@@ -414,13 +499,13 @@ int process_stream(char stored[], char msg[]){
     char buffer[2*(MAX_MSG+1)];
     char *aux;
 
-    //buffer must be same size as stored, 
-
     memcpy(buffer, stored, 2*(MAX_MSG+1));
 
     if(strlen(stored) != 0){
         aux = strtok(buffer, "\n");
-        strcpy(msg, aux);
+        if(aux == NULL){
+            return -1;
+        }
     }
     else{
         return -1;
@@ -429,17 +514,22 @@ int process_stream(char stored[], char msg[]){
     if(strlen(msg) > MAX_MSG-1){
         //discard
         memset(stored, '\0', 2*(MAX_MSG+1));
+        return -1;
     }
-    else if(strlen(msg) < strlen(stored)){  //found a complete message with reasonable size
-        //reattach \n symbol to msg (strtok removed it)
-        strcat(msg, "\n");
-        //shift left in stored
-        memmove(stored, &stored[strlen(msg)], 2*(MAX_MSG+1)-strlen(msg));
+    else {
+        strcpy(msg, aux);
+        if(strlen(msg) < strlen(stored)){  //found a complete message with reasonable size
+            //reattach \n symbol to msg (strtok removed it)
+            strcat(msg, "\n");
+            //shift left in stored
+            memmove(stored, &stored[strlen(msg)], 2*(MAX_MSG+1)-strlen(msg));
 
-        return 0;
+            return 0;
+        }
+        else if(strlen(msg) == strlen(stored)){ //incomplete message
+            //wait for complete
+        }
+        return -1;
     }
-    else if(strlen(msg) == strlen(stored)){ //incomplete message
-        //wait for complete??||||||||||||||
-    }
-    return -1;
+    return 0;
 }

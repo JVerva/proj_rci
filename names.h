@@ -9,7 +9,7 @@
 #define NBOLD   "\e[m"
 
 struct name{
-    char file[100];
+    char file[101];
     struct name* next;
 };
 
@@ -25,7 +25,6 @@ Name addName(Name head, char file[]);
 //remove name from list
 //returns updated list head
 Name removeName(Name head, char file[]);
-
 
 //close routing table and free the memory
 void closeNames(Name head);

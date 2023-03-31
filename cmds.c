@@ -1,9 +1,9 @@
 #include "cmds.h"
 
+#define DEBUG 0
+
 const char* CMDS[] = {"join", "djoin", "create", "delete", "get", "show", "topology", "names", "routing", "leave", "exit", "st", "sn", "sr", "cr"};
 
-//checks if commands are valid, returns comand index if they are, returns -1 and prints error msg if they aren't
-//args gets filled with arguments for command
 int commandcheck(char buffer[], char** args){
     int index = -1;
     int n = -1;
@@ -126,7 +126,6 @@ int commandcheck(char buffer[], char** args){
     return index;
 }
 
-//joins node to network. if node id is already in the networks, use a new free one.
 int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id[], char ip[], char tcp[], struct addrinfo serverinfo, fd_set* rfds){
     //verify arguments
     if(verifynet(net)!=0){
@@ -182,19 +181,28 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
         char t_ip[20], t_port[6];
         memset(t_ip,0,20);
         memset(t_port,0,6);
-        printf("which node do you wish to connect to?\n %s", node_list);
-        int valid = 1;
-        do{
-            scanf("%s", node);
-            if(verifyid(node)!=0){
-                fprintf(stderr,"wrong format for node id.\n");
-            }else if(checkfornode(node, node_list)!=1){
-                fprintf(stderr, "node does not exist in the network.\n");
-            }else{
-                getnodeinfo(node, node_list, t_ip, t_port);
-                valid = 0;
-            }
-        }while(valid != 0);
+
+        if(DEBUG){
+            printf("which node do you wish to connect to?\n %s", node_list);
+            int valid = 1;
+            do{
+                scanf("%s", node);
+                if(verifyid(node)!=0){
+                    fprintf(stderr,"wrong format for node id.\n");
+                }else if(checkfornode(node, node_list)!=1){
+                    fprintf(stderr, "node does not exist in the network.\n");
+                }else{
+                    getnodeinfo(node, node_list, t_ip, t_port);
+                    valid = 0;
+                }
+            }while(valid != 0);
+        }
+        else{
+            chooserandnode(node_list, node);
+            getnodeinfo(node, node_list, t_ip, t_port);
+        }
+
+
  
         new_fd = connecttonode(t_ip, t_port);
         if(new_fd==-1){
@@ -207,12 +215,8 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
         new_send(new_fd, id, ip, tcp);
         //await extern message
         //create timeout, set time out
-        struct timeval tv;
-        tv.tv_sec = 2;
-        tv.tv_usec = 0;
-        setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
         char buff[128];
-        int n = read(new_fd, buff, sizeof(buff));
+        int n = readwithtimeout(new_fd, 2, buff, 128);
         if(n == -1){
             perror("error on read");
             fprintf(stderr, "connecting node did not respond.\n");
@@ -239,9 +243,6 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
                     free(args);
                     return -1;
                 }
-                //reset timeout
-                tv.tv_sec = 0;
-                setsockopt(new_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
                 //set node info extern
                 FD_SET(new_fd, rfds);
                 nodeinfo->ext = createContact();
@@ -261,7 +262,6 @@ int join(int fd_udp, int fd_tcp, struct node_info* nodeinfo, char net[], char id
     return 0;
 }
 
-//joins node to network.
 int djoin(int fd_tcp, int fd_udp, struct node_info* nodeinfo, char net[], char id[], char ip[], char tcp[], char bootid[], char bootip[], char boottcp[], struct addrinfo serverinfo,fd_set* rfds){
     //verify arguments
     if(verifynet(net)!=0){

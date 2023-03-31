@@ -114,7 +114,6 @@ int extern_rcv(struct node_info *node, char id_sender[],char id_rcv[], char ip[]
     fillContact(node->bck, id_rcv, ip, port);
     node->bck->fd = -1; //|||||||||||
 
-    //UPDATE ROUTING TABLE?|||||||||||||
     
     return 0;
 }
@@ -163,7 +162,7 @@ int extern_send(struct node_info* nodeinfo, int fd){
 int query_rcv(struct node_info* nodeinfo, Contact sender, char dest[], char origin[], char name[]){
     Contact route_dest, aux;
 
-    //check input error|||||||||||||||||||||||
+    //check input error
     if(verifyid(dest)!=0) return -1;
     if(verifyid(origin)!=0) return -1;
     if(strcmp(dest, origin) == 0) return -1;

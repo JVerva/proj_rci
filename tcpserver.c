@@ -11,6 +11,9 @@
 #include <errno.h>
 
 #define PORT "59001"
+#define NET "000"
+#define IP "tua mae"
+#define NODE "00"
 
 int main(){
 
@@ -61,12 +64,18 @@ int main(){
     char buff[256] = {"\0"};
     memset(buff,0,256);
     memset(cmd,0,40);
-    sprintf(cmd, "REG %s %s %s %s", "032", "00", "192.168.1.100", PORT);
+    sprintf(cmd, "REG %s %s %s %s", NET, NODE, IP, PORT);
     int n = sendto(sockfd_udp, cmd , 40 ,0,res->ai_addr, res->ai_addrlen);
-    printf("%d\n",n);
+
+    socklen_t addr_size = sizeof(res);
 
     while(1){
-        
+        if((accept(sockfd, (struct sockaddr*) &res, &addr_size)) == -1){
+            fprintf(stderr, "error accepting new connection.\n");
+            return -1;
+        }else{
+            printf("accepted a connection.\n");
+        }
     }
     return 0;
 }
